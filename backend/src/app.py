@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from src.routes.open_ai.route import router as open_ai_router
 
+
 # handles startup and shutdown. https://fastapi.tiangolo.com/advanced/events/#lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -12,9 +13,11 @@ async def lifespan(app: FastAPI):
     yield
     print("👋 Shutting down the app...")
 
+
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(open_ai_router, prefix="/open-ai", tags=["OpenAI"])
+
 
 @app.middleware("http")
 async def basic_middleware(request: Request, call_next):
@@ -23,6 +26,7 @@ async def basic_middleware(request: Request, call_next):
     print(f"📤 Response status: {response.status_code}")
     return response
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,6 +34,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/")
 def root():

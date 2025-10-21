@@ -9,4 +9,9 @@
 
 # Starting Server
     - poetry run uvicorn src.app:app --host 0.0.0.0 --port 8000
-  
+    - Testing routes: 
+        - Go to: http://localhost:8000/docs
+        - Run test routes through that page 
+
+# Formatter
+    - Run: `poetry run black src/` to format all files automatically
