@@ -1,9 +1,11 @@
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from src.routes.open_ai.route import router as open_ai_router
+from src.utils.postgres.connection_handler import db_manager
+from sqlalchemy.orm import Session
 
 
 # handles startup and shutdown. https://fastapi.tiangolo.com/advanced/events/#lifespan
@@ -39,3 +41,10 @@ app.add_middleware(
 @app.get("/")
 def root():
     return JSONResponse(status_code=200, content={"message": "Hello World!"})
+
+
+@app.get("/test_postgres_connection")
+def get_users(db: Session = Depends(db_manager.get_db)):
+    return JSONResponse(
+        status_code=200, content={"message": "Postres connection successful!"}
+    )
