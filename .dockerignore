@@ -1,0 +1,36 @@
+# Node.js (Client)
+**/node_modules
+**/dist
+**/build
+**/.npm
+**/.next
+**/.cache
+**/*.log
+
+# Python (Backend)
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.Python
+**/.env
+**/.venv
+**/pip-log.txt
+**/.pytest_cache
+**/.coverage
+**/.tox
+
+# Development
+**/.git
+**/.gitignore
+**/.vscode
+**/.idea
+**/README.md
+**/LICENSE
+**/.DS_Store
+**/Thumbs.db
+
+# Docker
+**/Dockerfile*
+**/.dockerignore
+**/docker-compose*
