@@ -1,21 +1,23 @@
 services:
-  client:
+  frontend:
     build: 
-      context: ./client
-      dockerfile: Dockerfile.dev
+      context: ./frontend
+      dockerfile: dockerfile.dev
     ports:
       - "5173:5173"
     volumes:
-      - ./client:/client
-      - /client/node_modules
+      - ./frontend:/frontend
+      - /frontend/node_modules
     environment:
       - NODE_ENV=development
 
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.dev
+      dockerfile: dockerfile.dev
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/backend
+      - /backend/__pycache__
+      - /backend/.venv
