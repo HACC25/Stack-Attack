@@ -1,8 +1,10 @@
 from pypdf import PdfReader
 
+
 class Page:
     def __init__(self, content: str | None):
         self.content: str = content or ""
+
 
 def load_pages(file_path: str) -> list[Page]:
     reader = PdfReader(file_path)
