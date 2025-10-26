@@ -31,4 +31,15 @@ To run the data ingestion sample route, add the following folder(s) to the src f
 
 Go to [Hawaii Bargainaing Documents](https://dhrd.hawaii.gov/state-hr-professionals/lro/public-emp-excl-reps/), download any of the PDFs and add it to the bargaining files folder. 
 
-Now run the `/ingestion` route! Outputs will (for now) be shown in the `.files/bargaining/llm_outputs` folder for viewing. TODO: Move to postgres db with a UUID.
+Now run the `/ingestion` route! The outputs will be stored in the documents table in PostgreSQL.
+
+# Postgresql
+
+## AWS RDS
+- Create an RDS PostgreSQL instance
+    - Store the instance name, endpoint, port, username, and password in an ENV file.
+        - See env.sample 
+- To allow connections locallay or on an external IP, go to the AWS portal > EC2
+    - Find the default security option and click it
+    - Navigate to inbound rules and select "Edit inbound rules"
+    - Add a new rule of type "PostgreSQL" then select the source "My IP"

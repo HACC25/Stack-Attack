@@ -1,6 +1,6 @@
 from typing import Generator
 from sqlalchemy import Engine, create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker, declarative_base
 from src.utils.env_helper import get_setting
 
 DB_NAME = get_setting("POSTGRES_NAME")
@@ -11,6 +11,7 @@ DB_PORT = get_setting("POSTGRES_PORT")
 DB_URL = (
     f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_ENDPOINT}:{DB_PORT}/{DB_NAME}"
 )
+Base = declarative_base()
 
 
 class DB_Manager:

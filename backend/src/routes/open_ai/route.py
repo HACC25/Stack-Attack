@@ -3,10 +3,13 @@ import logging
 import os
 from pathlib import Path
 from src.utils.open_ai.open_ai_client_manager import open_ai_client_manager
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from src.routes.open_ai.models import ChatRequest
 from src.utils.pdf_parsing.page import load_pages
 from src.utils.helper import is_json
+from sqlalchemy.orm import Session
+from src.utils.postgres.connection_handler import db_manager
+from src.utils.postgres.models import Documents
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -19,7 +22,7 @@ async def chat_demo(request: ChatRequest):
 
 
 @router.post("/ingestion_demo")
-async def sample_ingestion():
+async def sample_ingestion(db: Session = Depends(db_manager.get_db)):
     try:
         root = os.getcwd()  # Project Root ([...]\HACC_2025\Stack-Attack\backend)
         ingestion_location = os.path.join(root, "src", ".files", "bargaining")
@@ -35,24 +38,48 @@ async def sample_ingestion():
             if os.path.isfile(full_path) and filename.lower().endswith(".pdf"):
                 pages = load_pages(full_path)  ## TODO: Run async-like to avoid blocking
                 if not pages or not pages[0].content.strip():  ## skip empty pages
-                    print(f"Skipping {filename}: no readable text found on first page.")
+                    logger.info(
+                        f"Skipping {filename}: no readable text found on first page."
+                    )
                     continue
                 response: str = await open_ai_client_manager.run_prompt_template(
                     template=prompt_template,
                     variables={"input": pages[0].content, "file_name": filename},
                 )
-                if is_json(response):
-                    response_json: dict = json.loads(response)
-                    output_json_path = os.path.join(
-                        output_location, f"{Path(filename).stem}.json"
-                    )
-                    with open(output_json_path, "w", encoding="utf-8") as f:
-                        json.dump(response_json, f, ensure_ascii=False, indent=4)
-                    # print(f"Saved JSON output to: {output_json_path}")
-                else:
-                    raise Exception(f"LLM Output was not JSON formatted --> {response}")
+            if not is_json(response):
+                raise Exception(f"LLM Output was not JSON formatted --> {response}")
 
-        print("Ingestion Process Completed Without Error")
+            response_json: dict = json.loads(response)
+            title = response_json.get("title")
+            unit = response_json.get("unit")
+            target_audience = response_json.get("target_audience")
+            start_date = response_json.get("start_date")
+            end_date = response_json.get("end_date")
+
+            existing_doc = db.query(Documents).filter_by(file_name=filename).first()
+            if existing_doc:
+                existing_doc.title = title
+                existing_doc.unit = unit
+                existing_doc.target_audience = target_audience
+                existing_doc.start_date = start_date
+                existing_doc.end_date = end_date
+                logger.info(f"Updated document: {filename}")
+            else:
+                new_doc = Documents(
+                    file_name=filename,
+                    title=title,
+                    unit=unit,
+                    target_audience=target_audience,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+                db.add(new_doc)
+                logger.info(f"Inserted new document: {filename}")
+
+            db.commit()
+
+        logger.info("Ingestion Process Completed Successfully")
+        return {"message": "Ingestion process completed successfully."}
     except Exception as e:
-        print(f"Error occurred during the Ingestion Process! {str(e)}")
+        logger.error(f"Error occurred during the Ingestion Process! {str(e)}")
         raise HTTPException(status_code=400, detail=f"Error: {str(e)}")

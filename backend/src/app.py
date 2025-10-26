@@ -6,12 +6,20 @@ from contextlib import asynccontextmanager
 from src.routes.open_ai.route import router as open_ai_router
 from src.utils.postgres.connection_handler import db_manager
 from sqlalchemy.orm import Session
+from src.utils.postgres.connection_handler import Base
+
+## Below is needed for the declaration of the sqlachemy models to be recognized when creating all models.
+## TODO: Reorganize to handle this better!
+from src.utils.postgres import models
 
 
 # handles startup and shutdown. https://fastapi.tiangolo.com/advanced/events/#lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Starting up the app...")
+    ## This should create all tables, but will not handle table migrations.
+    ## Refer to alembic if table migrations are needed.
+    Base.metadata.create_all(bind=db_manager.db_engine)
     yield
     print("👋 Shutting down the app...")
 
