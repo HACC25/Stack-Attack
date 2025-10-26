@@ -1,4 +1,4 @@
-from openai import OpenAI, RateLimitError
+from openai import AsyncOpenAI, RateLimitError
 from src.utils.env_helper import get_setting
 from pathlib import Path
 import os
@@ -7,11 +7,11 @@ from langchain_core.prompts import PromptTemplate
 
 class Open_AI_Client_Manager:
     def __init__(self):
-        self.client = OpenAI(api_key=get_setting("OPEN_AI_KEY"))
+        self.client = AsyncOpenAI(api_key=get_setting("OPEN_AI_KEY"))
 
-    def get_chat_model(self, user_message: str, model: str = "gpt-4o"):
+    async def get_chat_model(self, user_message: str, model: str = "gpt-4o"):
         try:
-            completion = self.client.chat.completions.create(
+            completion = await self.client.chat.completions.create(
                 model=model,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
@@ -24,27 +24,45 @@ class Open_AI_Client_Manager:
         except Exception as e:
             return f"Unexpected error: {e}"
 
-    def run_prompt_template(
-        self, template: str, variables: dict, user_message: str, model: str = "gpt-4o"
+    async def run_prompt_template(
+        self,
+        template: str,
+        variables: dict,
+        user_message: str | None = None,
+        model: str = "gpt-4o",
     ):
-        prompt_str: str = self.load_template(template_name=template)
-        prompt_template = PromptTemplate.from_template(template=prompt_str)
-        prompt_value = prompt_template.format(**variables)
-        completion = self.client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": prompt_value},
-                {"role": "user", "content": user_message},
-            ],
-        )
-        return completion.choices[0].message.content
+        try:
+            prompt_template = PromptTemplate.from_template(template=template)
+            prompt_value = prompt_template.format(**variables)
+            messages: list[dict] = [{"role": "system", "content": prompt_value}]
+            if user_message is not None:
+                messages.append({"role": "user", "content": user_message})
+            completion = await self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+            )
+            # print("=== RAW COMPLETION RESPONSE ===")
+            # print(completion)
+            if not completion or not getattr(completion, "choices", []):
+                raise ValueError(f"Invalid completion response: {completion}")
+            prompt_tokens = completion.usage.prompt_tokens
+            completion_tokens = completion.usage.completion_tokens
+            total_tokens = completion.usage.total_tokens
+
+            print(f"Prompt tokens: {prompt_tokens}")
+            print(f"Completion tokens: {completion_tokens}")
+            print(f"Total tokens: {total_tokens}")
+            return completion.choices[0].message.content
+
+        except Exception as e:
+            print(f"[OpenAI Client ERROR] run_prompt_template failed: {e}")
+            raise
 
     def load_template(self, template_name: str) -> str:
         root = os.getcwd()  # Project Root ([...]\HACC_2025\Stack-Attack\backend)
-        prompt_location = f"{root}/prompts/{template_name}.txt"
+        prompt_location = f"{root}/src/prompts/{template_name}.txt"
         with open(prompt_location, "r", encoding="utf-8") as f:
             return f.read().strip()
 
 
 open_ai_client_manager = Open_AI_Client_Manager()
-open_ai_client_manager.load_template("s")
