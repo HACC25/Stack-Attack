@@ -15,3 +15,12 @@
 
 # Formatter
     - Run: `poetry run black src/` to format all files automatically
+
+# Env 
+    - Required ENV settings:
+        - OPEN_AI_KEY="<YOUR_API_KEY>"
+        - POSTGRES_ENDPOINT="<POSTGRES ENDPOINT>"
+        - POSTGRES_USERNAME="<POSTGRES_USERNAME>"
+        - POSTGRES_PASSWORD="<POSTGRES_PASSWORD>"
+        - POSTGRES_PORT="<POSTGRES_PORT>"
+        - POSTGRES_NAME="<POSTGRES_NAME>"
