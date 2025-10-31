@@ -1,27 +1,22 @@
+
+
+
 import json
 import logging
 import os
 from src.utils.open_ai.open_ai_client_manager import open_ai_client_manager
-from fastapi import APIRouter, Depends, HTTPException
-from src.routes.open_ai.models import ChatRequest
+from fastapi import APIRouter, Depends, HTTPException, Body
+from src.routes.postgres.models import ChatRequest
 from src.utils.pdf_parsing.page import load_pages
 from src.utils.helper import is_json
 from sqlalchemy.orm import Session
 from src.utils.postgres.connection_handler import db_manager
-from src.utils.postgres.models import Documents
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-
-@router.post("/demo")
-async def chat_demo(request: ChatRequest):
-    response = await open_ai_client_manager.get_chat_model(user_message=request.message)
-    return {"response": response}
-
-
-@router.post("/ingestion_demo")
-async def sample_ingestion(db: Session = Depends(db_manager.get_db)):
+@router.post("/document_search_demo")
+async def document_search_demo(request: ChatRequest = Body(...), db: Session = Depends(db_manager.get_db)):
     try:
         root = os.getcwd()  # Project Root ([...]\HACC_2025\Stack-Attack\backend)
         ingestion_location = os.path.join(root, "src", ".files", "bargaining")
