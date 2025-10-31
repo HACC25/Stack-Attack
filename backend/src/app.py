@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from src.routes.open_ai.route import router as open_ai_router
+from src.routes.postgres.route import router as postgres_router
 from src.utils.postgres.connection_handler import db_manager
 from sqlalchemy.orm import Session
 from src.utils.postgres.connection_handler import Base
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(open_ai_router, prefix="/open-ai", tags=["OpenAI"])
+app.include_router(postgres_router, prefix="/postgres", tags=["Postgres"])
 
 
 @app.middleware("http")
