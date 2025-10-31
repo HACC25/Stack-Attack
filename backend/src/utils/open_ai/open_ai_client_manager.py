@@ -1,6 +1,5 @@
 from openai import AsyncOpenAI, RateLimitError
 from src.utils.env_helper import get_setting
-from pathlib import Path
 import os
 from langchain_core.prompts import PromptTemplate
 
@@ -57,6 +56,48 @@ class Open_AI_Client_Manager:
         except Exception as e:
             print(f"[OpenAI Client ERROR] run_prompt_template failed: {e}")
             raise
+
+    async def run_embed(self, text: str):
+        try:
+            embedding = await self.client.embeddings.create(
+                model="text-embedding-3-small",
+                input=text,
+                encoding_format="float",
+                dimensions=1536,
+            )
+
+            usage = getattr(embedding, "usage", None)
+            data = embedding.data[0]
+
+            print(f"Embedding usage: {usage}")
+            print(f"Embedding length: {len(data.embedding)}")
+
+            return data.embedding
+
+        except Exception as e:
+            print(f"Embedding Error: {str(e)}")
+            return None
+        # Output sample:
+        # {
+        #   "object": "list",
+        #   "data": [
+        #     {
+        #       "object": "embedding",
+        #       "index": 0,
+        #       "embedding": [
+        #         -0.006929283495992422,
+        #         -0.005336422007530928,
+        #         -4.547132266452536e-05,
+        #         -0.024047505110502243
+        #       ],
+        #     }
+        #   ],
+        #   "model": "text-embedding-3-small",
+        #   "usage": {
+        #     "prompt_tokens": 5,
+        #     "total_tokens": 5
+        #   }
+        # }
 
     def load_template(self, template_name: str) -> str:
         root = os.getcwd()  # Project Root ([...]\HACC_2025\Stack-Attack\backend)

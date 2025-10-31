@@ -43,3 +43,14 @@ Now run the `/ingestion` route! The outputs will be stored in the documents tabl
     - Find the default security option and click it
     - Navigate to inbound rules and select "Edit inbound rules"
     - Add a new rule of type "PostgreSQL" then select the source "My IP"
+
+
+## Injestion 
+
+`/ingestion_demo` route takes a lengthly amount of time. Depending on the amount of documents to index, this process may take upwards of 15 minutes.
+DO NOT run this process unless you want to re-index the entire bargaining document repository. 
+
+TODO: Make a background process and a tracker to avoid API interuptions. 
+TODO: Avoid un-needed upserts.
+    - Make an update folder to avoid upserting the same file more than once
+    - OR ignore the same file names unless explicitly stated

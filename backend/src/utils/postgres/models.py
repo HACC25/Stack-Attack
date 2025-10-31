@@ -1,6 +1,7 @@
-from sqlalchemy import Column, DateTime, Text, func
+from sqlalchemy import Column, DateTime, Text, ForeignKey, func
 from src.utils.postgres.connection_handler import Base
 from sqlalchemy.dialects.postgresql import UUID
+from pgvector.sqlalchemy import Vector
 
 
 class Documents(Base):
@@ -21,3 +22,25 @@ class Documents(Base):
 
     def __repr__(self):
         return f"<Documents(id={self.id}, file_name='{self.file_name}', title='{self.title}', unit='{self.unit}')>"
+
+
+class Embeddings(Base):
+    __tablename__ = "embeddings"
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        index=True,
+        server_default=func.gen_random_uuid(),
+    )
+    content = Column(Text, nullable=True)
+    vector = Column(Vector(dim=1536), nullable=False)
+    document_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    def __repr__(self):
+        return f"<Embeddings(id={self.id}, document_id='{self.document_id}')>"
