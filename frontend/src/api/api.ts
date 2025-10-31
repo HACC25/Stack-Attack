@@ -68,3 +68,28 @@ export async function apiRequestCallback(endpoint: string, options: RequestOptio
 
     return res
 }
+
+// try { 
+//     const result = await apiRequestCallback("/open-ai/demo", {
+//         method: "POST",
+//         body: { // Post, delete, patch
+//             "message": "hello Open ai!"
+//         },
+//         query: { // get
+//             "message": "hello Open ai!"
+//         },
+//         baseUrl: "localhost:8000", // env
+//     })
+
+//     if (result.ok){
+//         // GOOD RESPONSE
+//     } else {
+//         // something shitty happened
+//         //           
+//     }
+
+//     await result.json()
+// }
+// catch (error) {
+
+// }
