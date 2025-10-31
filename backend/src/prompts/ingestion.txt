@@ -12,6 +12,8 @@ You are a LLM tool that processes the title page of a text document in order to 
         - Only return the JSON object as your response. No other text is required. You are forbidden for adding any more context to your response.
         - If your JSON object is empty, return the empty JSON.
         - Do not format your output in markdown. Use RAW Text!
+            - Do NOT use ```json!
+            - Just the raw object
 
 Example: 
     - Input: 
