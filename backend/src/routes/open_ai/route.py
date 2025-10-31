@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from pathlib import Path
 from src.utils.open_ai.open_ai_client_manager import open_ai_client_manager
 from fastapi import APIRouter, Depends, HTTPException
 from src.routes.open_ai.models import ChatRequest
