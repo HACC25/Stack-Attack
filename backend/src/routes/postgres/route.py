@@ -1,11 +1,7 @@
-import json
 import logging
-import os
 from src.utils.open_ai.open_ai_client_manager import open_ai_client_manager
 from fastapi import APIRouter, Body, Depends, HTTPException
 from src.routes.postgres.models import ChatRequest
-from src.utils.pdf_parsing.page import load_pages
-from src.utils.helper import is_json
 from sqlalchemy.orm import Session
 from src.utils.postgres.connection_handler import db_manager
 from src.utils.postgres.models import Documents, Embeddings

@@ -1,18 +1,34 @@
+import httpx
+import logging
+
+from urllib.parse import urlencode
 from fastapi import Depends, FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from sqlalchemy.orm import Session
 
 from src.routes.open_ai.route import router as open_ai_router
 from src.routes.postgres.route import router as postgres_router
 from src.utils.postgres.connection_handler import db_manager
-from sqlalchemy.orm import Session
 from src.utils.postgres.connection_handler import Base
+from src.utils.env_helper import get_setting
+from src.utils.postgres.queries import store_user_info
 
 ## Below is needed for the declaration of the sqlachemy models to be recognized when creating all models.
 ## TODO: Reorganize to handle this better!
 from src.utils.postgres import models
 
+CLIENT_ID = get_setting("OATH_CLIENT_ID")
+CLIENT_SECRET = get_setting("OATH_CLIENT_SECRET")
+REDIRECT_URI = get_setting("REDIRECT_URI")
+FRONTEND_URL = get_setting("FRONTEND_URL")
+
+GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
+
+logger = logging.getLogger(__name__)
 
 # handles startup and shutdown. https://fastapi.tiangolo.com/advanced/events/#lifespan
 @asynccontextmanager
@@ -58,3 +74,56 @@ def get_users(db: Session = Depends(db_manager.get_db)):
     return JSONResponse(
         status_code=200, content={"message": "Postres connection successful!"}
     )
+
+# Do not call with fetch. call with 'window.location.href = "http://localhost:8000/login";'
+@app.get("/login")
+def login():
+    params = {
+        "client_id": CLIENT_ID,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "redirect_uri": REDIRECT_URI,
+        "access_type": "offline",
+        "prompt": "consent"
+    }
+    print(params)
+    return RedirectResponse(f"{GOOGLE_AUTH_URL}?{urlencode(params)}")
+
+
+@app.get("/auth/callback")
+async def auth_callback(request: Request):
+    code = request.query_params.get("code")
+    if not code:
+        return JSONResponse({"error": "Missing code"}, status_code=400)
+
+    data = {
+        "code": code,
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "redirect_uri": REDIRECT_URI,
+        "grant_type": "authorization_code",
+    }
+
+    async with httpx.AsyncClient() as client:
+        token_response = await client.post(GOOGLE_TOKEN_URL, data=data)
+        token_data = token_response.json()
+
+        headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+        user_response = await client.get(GOOGLE_USERINFO_URL, headers=headers)
+        user_info = user_response.json()
+    store_user_info(user_info=user_info)
+    params = {
+        "email": user_info["email"],
+        "name": user_info["name"],
+        "picture": user_info.get("picture", ""),
+        "access_token": token_data["access_token"],  # or your own token
+    }
+    redirect_url = f"{FRONTEND_URL}/auth/callback?{urlencode(params)}"
+
+    return RedirectResponse(url=redirect_url)
+    sample_token_response = {"google_user": user_info,"google_token": token_data}
+    print(f"{sample_token_response}")
+    return JSONResponse({
+        "google_user": user_info,
+        "google_token": token_data
+    })
