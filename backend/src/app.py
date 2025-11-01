@@ -19,8 +19,8 @@ from src.utils.postgres.queries import store_user_info
 ## TODO: Reorganize to handle this better!
 from src.utils.postgres import models
 
-CLIENT_ID = get_setting("OATH_CLIENT_ID")
-CLIENT_SECRET = get_setting("OATH_CLIENT_SECRET")
+CLIENT_ID = get_setting("OAUTH_CLIENT_ID")
+CLIENT_SECRET = get_setting("OAUTH_CLIENT_SECRET")
 REDIRECT_URI = get_setting("REDIRECT_URI")
 FRONTEND_URL = get_setting("FRONTEND_URL")
 
