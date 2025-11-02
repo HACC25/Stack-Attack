@@ -54,3 +54,17 @@ TODO: Make a background process and a tracker to avoid API interuptions.
 TODO: Avoid un-needed upserts.
     - Make an update folder to avoid upserting the same file more than once
     - OR ignore the same file names unless explicitly stated
+
+# AUTH
+
+Using Google OAUTH for authenticating users. 
+On successful Authentification, users are redirected back to the frontend home page `/auth/callback`.
+Store credentials on that page as needed.
+
+Newer routes are now secured using a custom JWT derived from the Google auth access token.
+If the token does not match a user within our database, return error 403 (forbidden error).
+If the token cannot be decoded using the secret token, return error 401 (auth error).
+
+IMPORTANT: We do not store any email passwords, nor do we read any of these values. Your privacy is of utmost importance.
+
+TODO: Establish allow domains
