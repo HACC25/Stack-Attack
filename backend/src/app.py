@@ -90,7 +90,6 @@ def login():
         "access_type": "offline",
         "prompt": "consent"
     }
-    print(params)
     return RedirectResponse(f"{GOOGLE_AUTH_URL}?{urlencode(params)}")
 
 
@@ -116,7 +115,6 @@ async def auth_callback(request: Request):
         user_response = await client.get(GOOGLE_USERINFO_URL, headers=headers)
         user_info = user_response.json()
     store_user_info(user_info=user_info)
-    # TODO: Create our own access token JWT and use for future API calls
     # Create our own JWT
     access_token = create_access_token({"sub": user_info["sub"], "email": user_info["email"]})
 
