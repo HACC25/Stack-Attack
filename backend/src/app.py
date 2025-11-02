@@ -10,6 +10,9 @@ from sqlalchemy.orm import Session
 
 from src.routes.open_ai.route import router as open_ai_router
 from src.routes.postgres.route import router as postgres_router
+from src.routes.chats.route import router as chats_router
+from src.routes.messages.route import router as messages_router
+from src.routes.security import create_access_token
 from src.utils.postgres.connection_handler import db_manager
 from src.utils.postgres.connection_handler import Base
 from src.utils.env_helper import get_setting
@@ -45,7 +48,8 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(open_ai_router, prefix="/open-ai", tags=["OpenAI"])
 app.include_router(postgres_router, prefix="/postgres", tags=["Postgres"])
-
+app.include_router(chats_router, prefix="/chats", tags=["Chats"])
+app.include_router(messages_router, prefix="/messages", tags=["Messages"])
 
 @app.middleware("http")
 async def basic_middleware(request: Request, call_next):
@@ -112,18 +116,12 @@ async def auth_callback(request: Request):
         user_response = await client.get(GOOGLE_USERINFO_URL, headers=headers)
         user_info = user_response.json()
     store_user_info(user_info=user_info)
-    params = {
-        "email": user_info["email"],
-        "name": user_info["name"],
-        "picture": user_info.get("picture", ""),
-        "access_token": token_data["access_token"],  # or your own token
-    }
-    redirect_url = f"{FRONTEND_URL}/auth/callback?{urlencode(params)}"
+    # TODO: Create our own access token JWT and use for future API calls
+    # Create our own JWT
+    access_token = create_access_token({"sub": user_info["sub"], "email": user_info["email"]})
 
+    # Redirect to frontend with our token
+    params = {"token": access_token, "email": user_info["email"], "name": user_info["name"]}
+    redirect_url = f"{FRONTEND_URL}/auth/callback?{urlencode(params)}"
     return RedirectResponse(url=redirect_url)
-    sample_token_response = {"google_user": user_info,"google_token": token_data}
-    print(f"{sample_token_response}")
-    return JSONResponse({
-        "google_user": user_info,
-        "google_token": token_data
-    })
+
