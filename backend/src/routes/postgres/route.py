@@ -10,6 +10,7 @@ from sqlalchemy import select
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+
 @router.post("/query-db-search-demo")
 async def db_search_demo(
     request: ChatRequest = Body(...),
@@ -28,7 +29,9 @@ async def db_search_demo(
                 Embeddings.id,
                 Embeddings.content,
                 Documents.file_name,
-                Embeddings.vector.cosine_distance(user_message_vector).label("distance")
+                Embeddings.vector.cosine_distance(user_message_vector).label(
+                    "distance"
+                ),
             )
             .join(Documents, Embeddings.document_id == Documents.id)
             .order_by("distance")
@@ -40,7 +43,9 @@ async def db_search_demo(
             {
                 "document_id": str(row.id),
                 "file_name": row.file_name,
-                "similarity_score": float(1 - row.distance),  # converts distance to similarity score
+                "similarity_score": float(
+                    1 - row.distance
+                ),  # converts distance to similarity score
                 "content_snippet": row.content[:200] if row.content else None,
             }
             for row in results

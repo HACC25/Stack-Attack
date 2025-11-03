@@ -46,6 +46,7 @@ class Embeddings(Base):
     def __repr__(self):
         return f"<Embeddings(id={self.id}, document_id='{self.document_id}')>"
 
+
 class Users(Base):
     __tablename__ = "users"
 
@@ -56,8 +57,10 @@ class Users(Base):
     picture = Column(Text, nullable=True)
 
     chats = relationship("Chats", back_populates="user", cascade="all, delete")
+
     def __repr__(self):
         return f"<Users(sub={self.sub}, email='{self.email}')>"
+
 
 class Chats(Base):
     __tablename__ = "chats"
@@ -78,8 +81,10 @@ class Chats(Base):
 
     user = relationship("Users", back_populates="chats")
     messages = relationship("Messages", back_populates="chat", cascade="all, delete")
+
     def __repr__(self):
         return f"<Chats(id={self.id}, created_at='{self.created_at}')>"
+
 
 class Messages(Base):
     __tablename__ = "messages"
@@ -102,5 +107,6 @@ class Messages(Base):
     content = Column(Text, nullable=False)
 
     chat = relationship("Chats", back_populates="messages")
+
     def __repr__(self):
         return f"<Messages(id={self.id}, content='{self.content}')>"

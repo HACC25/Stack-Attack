@@ -33,6 +33,7 @@ GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 logger = logging.getLogger(__name__)
 
+
 # handles startup and shutdown. https://fastapi.tiangolo.com/advanced/events/#lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -50,6 +51,7 @@ app.include_router(open_ai_router, prefix="/open-ai", tags=["OpenAI"])
 app.include_router(postgres_router, prefix="/postgres", tags=["Postgres"])
 app.include_router(chats_router, prefix="/chats", tags=["Chats"])
 app.include_router(messages_router, prefix="/messages", tags=["Messages"])
+
 
 @app.middleware("http")
 async def basic_middleware(request: Request, call_next):
@@ -79,6 +81,7 @@ def get_users(db: Session = Depends(db_manager.get_db)):
         status_code=200, content={"message": "Postres connection successful!"}
     )
 
+
 # Do not call with fetch. call with 'window.location.href = "http://localhost:8000/login";'
 @app.get("/login")
 def login():
@@ -88,7 +91,7 @@ def login():
         "scope": "openid email profile",
         "redirect_uri": REDIRECT_URI,
         "access_type": "offline",
-        "prompt": "consent"
+        "prompt": "consent",
     }
     return RedirectResponse(f"{GOOGLE_AUTH_URL}?{urlencode(params)}")
 
@@ -116,10 +119,15 @@ async def auth_callback(request: Request):
         user_info = user_response.json()
     store_user_info(user_info=user_info)
     # Create our own JWT
-    access_token = create_access_token({"sub": user_info["sub"], "email": user_info["email"]})
+    access_token = create_access_token(
+        {"sub": user_info["sub"], "email": user_info["email"]}
+    )
 
     # Redirect to frontend with our token
-    params = {"token": access_token, "email": user_info["email"], "name": user_info["name"]}
+    params = {
+        "token": access_token,
+        "email": user_info["email"],
+        "name": user_info["name"],
+    }
     redirect_url = f"{FRONTEND_URL}/auth/callback?{urlencode(params)}"
     return RedirectResponse(url=redirect_url)
-

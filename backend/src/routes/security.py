@@ -19,10 +19,13 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     if expires_delta:
         expire = datetime.now(tz=timezone.utc) + expires_delta
     else:
-        expire = datetime.now(tz=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(tz=timezone.utc) + timedelta(
+            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+        )
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
@@ -35,7 +38,8 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         return {"sub": user_sub, "email": email}
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
-    
+
+
 def get_registered_user(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(db_manager.get_db),

@@ -2,6 +2,7 @@ from src.utils.postgres.connection_handler import db_manager
 from src.utils.postgres.models import Users
 from sqlalchemy.orm import Session
 
+
 def store_user_info(user_info: dict):
     db_gen = db_manager.get_db()
     db: Session = next(db_gen)
