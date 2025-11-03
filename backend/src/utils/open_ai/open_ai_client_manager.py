@@ -57,6 +57,30 @@ class Open_AI_Client_Manager:
             print(f"[OpenAI Client ERROR] run_prompt_template failed: {e}")
             raise
 
+    async def run_streamed_prompt_template(
+        self,
+        message: str,
+        template: str,
+        variables: dict,
+        model: str = "gpt-4o",
+    ):
+        try:
+            # TODO: LOAD CHAT HISTORY (Maybe)
+            prompt_template = PromptTemplate.from_template(template=template)
+            prompt_value = prompt_template.format(**variables)
+            messages: list[dict] = [{"role": "system", "content": prompt_value}]
+            if message is not None:
+                messages.append({"role": "user", "content": message})
+            stream = await self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                stream=True
+            )
+            return stream
+        except Exception as e:
+            print(f"[OpenAI Client stream ERROR] run_streamed_prompt_template failed: {e}")
+            raise
+
     async def run_embed(self, text: str):
         try:
             embedding = await self.client.embeddings.create(
