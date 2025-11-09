@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Text, ForeignKey, func, Boolean
+from sqlalchemy import Column, DateTime, Text, ForeignKey, func, Boolean, BIGINT, text, INT
 from src.utils.postgres.connection_handler import Base
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from pgvector.sqlalchemy import Vector
@@ -57,6 +57,7 @@ class Users(Base):
     picture = Column(Text, nullable=True)
 
     chats = relationship("Chats", back_populates="user", cascade="all, delete")
+    usage = relationship("TokenUsage", back_populates="user", cascade="all, delete")
 
     def __repr__(self):
         return f"<Users(sub={self.sub}, email='{self.email}')>"
@@ -84,6 +85,34 @@ class Chats(Base):
 
     def __repr__(self):
         return f"<Chats(id={self.id}, created_at='{self.created_at}')>"
+    
+class TokenUsage(Base):
+    __tablename__ = "token_usage"
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        index=True,
+        server_default=func.gen_random_uuid(),
+    )
+    user_sub = Column(
+        Text,
+        ForeignKey("users.sub", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        unique=True,
+    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    message_count = Column(INT, nullable=False, server_default=text("0"))
+    prompt_tokens = Column(BIGINT, nullable=False, server_default=text("0"))
+    completion_tokens = Column(BIGINT, nullable=False, server_default=text("0"))
+    total_tokens = Column(BIGINT, nullable=False, server_default=text("0"))
+
+    user = relationship("Users", back_populates="usage")
+
+    def __repr__(self):
+        return f"<TokenUsage(id={self.id}, created_at='{self.created_at}')>"
 
 
 class Messages(Base):

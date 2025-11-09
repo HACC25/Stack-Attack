@@ -1,6 +1,6 @@
-from typing import Generator
-from sqlalchemy import Engine, create_engine
-from sqlalchemy.orm import Session, sessionmaker, declarative_base
+from typing import AsyncGenerator
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 from src.utils.env_helper import get_setting
 
 DB_NAME = get_setting("POSTGRES_NAME")
@@ -8,27 +8,27 @@ DB_ENDPOINT = get_setting("POSTGRES_ENDPOINT")
 DB_USER = get_setting("POSTGRES_USERNAME")
 DB_PASSWORD = get_setting("POSTGRES_PASSWORD")
 DB_PORT = get_setting("POSTGRES_PORT")
+
 DB_URL = (
-    f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_ENDPOINT}:{DB_PORT}/{DB_NAME}"
+    f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_ENDPOINT}:{DB_PORT}/{DB_NAME}"
 )
 Base = declarative_base()
 
 
-class DB_Manager:
-    db_engine: Engine
-
+class AsyncDBManager:
     def __init__(self):
-        self.db_engine = create_engine(url=DB_URL, max_overflow=2, pool_size=5)
+        self.engine = create_async_engine(DB_URL, pool_size=5, max_overflow=2)
         self.session_local = sessionmaker(
-            autocommit=False, autoflush=False, bind=self.db_engine
+            bind=self.engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+            autoflush=False,
+            autocommit=False,
         )
 
-    def get_db(self) -> Generator[Session, None, None]:
-        db = self.session_local()
-        try:
-            yield db
-        finally:
-            db.close()
+    async def get_db(self) -> AsyncGenerator[AsyncSession, None]:
+        async with self.session_local() as session:
+            yield session
 
 
-db_manager = DB_Manager()
+db_manager = AsyncDBManager()

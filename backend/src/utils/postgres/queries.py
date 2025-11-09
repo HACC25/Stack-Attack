@@ -1,13 +1,12 @@
 from src.utils.postgres.connection_handler import db_manager
 from src.utils.postgres.models import Users
-from sqlalchemy.orm import Session
+from sqlalchemy import select
 
-
-def store_user_info(user_info: dict):
-    db_gen = db_manager.get_db()
-    db: Session = next(db_gen)
-    try:
-        existing_user = db.query(Users).filter(Users.sub == user_info["sub"]).first()
+async def store_user_info(user_info: dict):
+    async for db in db_manager.get_db():
+        stmt = select(Users).filter(Users.sub == user_info["sub"])
+        result = await db.execute(stmt)
+        existing_user = result.scalars().first()
 
         if existing_user:
             existing_user.name = user_info.get("name", existing_user.name)
@@ -18,10 +17,8 @@ def store_user_info(user_info: dict):
                 sub=user_info["sub"],
                 name=user_info.get("name", ""),
                 email=user_info.get("email", ""),
-                picture=user_info.get("picture", None),
+                picture=user_info.get("picture"),
             )
             db.add(new_user)
 
-        db.commit()
-    finally:
-        db.close()
+        await db.commit()
