@@ -4,10 +4,10 @@ import { AppSidebar } from "@/components/sidebar"
 export default function Layout({ children }: { children: React.ReactNode }) {
     return (
         <SidebarProvider>
-        <AppSidebar />
-        <main>
-            {children}
-        </main>
+            <AppSidebar />
+            <main>
+                {children}
+            </main>
         </SidebarProvider>
     )
 }

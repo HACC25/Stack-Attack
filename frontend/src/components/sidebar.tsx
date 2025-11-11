@@ -1,16 +1,17 @@
-import { Menu } from "lucide-react"
+import { Search } from "lucide-react"
 
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarHeader,
-    SidebarTrigger,
+    useSidebar
 } from "@/components/ui/sidebar"
 import { AppRecentConversationSidebar } from "./recent-conversation-sidebar"
 import { AppAccountSidebar } from "./account-sidebar"
 import type { AccountProp } from "@/components/account-sidebar"
 import { Button } from "./ui/button"
+import { SidebarButton } from "./custom-sidebar-button"
 
 const example_account:AccountProp = {
         name: "Kaleo Smith",
@@ -18,21 +19,20 @@ const example_account:AccountProp = {
         department: "Department",
 }
 
-function CustomSideBarTrigger(){
-    return(
-    <Button size="icon">
-        <Menu />
-    </Button>
-    )
-}
-
 export function AppSidebar() {
+    const {state} = useSidebar();
+
+    const isCollapsed = state === 'collapsed';
     return (
         <Sidebar collapsible="icon">
-        <SidebarHeader>
-            <SidebarTrigger>
-                <Menu></Menu>
-            </SidebarTrigger>
+        <SidebarHeader className="!flex-row justify-between">
+            <SidebarButton/>
+            {
+                !isCollapsed && 
+                <Button variant="ghost" size="icon-sm">
+                    <Search/>
+                </Button>
+            }
         </SidebarHeader>
         <SidebarContent>
             <AppRecentConversationSidebar></AppRecentConversationSidebar>
