@@ -5,6 +5,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from "@/components/ui/sidebar"
 
 interface ConversationProp{
@@ -17,7 +18,7 @@ const example_recent_conversations:ConversationProp[] = [
     {
         id: "9d8fce90-ac43-47b0-a5ba-eea38251af4e",
         title: "Funeral Leave Eligibility – Conversation with Kōkua (Blue-Collar Supervisors Agreement)",
-        timestamp: new Date("2025-10-27T18:45:00.000Z")
+        timestamp: new Date("2021-10-27T18:45:00.000Z")
     },
 
     {
@@ -40,17 +41,21 @@ const example_recent_conversations:ConversationProp[] = [
 ]
 
 const sortedConversation:ConversationProp[] = example_recent_conversations.sort((a, b) => {
-        if(a.timestamp > b.timestamp) return 1;
-        else if(a.timestamp < b.timestamp) return -1;
+        if(a.timestamp > b.timestamp) return -1;
+        else if(a.timestamp < b.timestamp) return 1;
         else return 0;
     });
 
 export function AppRecentConversationSidebar(){
+        const {state} = useSidebar();
+
+    const isCollapsed = state === 'collapsed';
+    
     return(
         <SidebarGroup>
             <SidebarGroupLabel>Recent</SidebarGroupLabel>
             <SidebarGroupContent>
-                <SidebarMenu>
+                {!isCollapsed&&(<SidebarMenu>
                 {sortedConversation.map((Conversation) => (
                     <SidebarMenuItem key={Conversation.id}>
                     <SidebarMenuButton asChild>
@@ -58,7 +63,7 @@ export function AppRecentConversationSidebar(){
                     </SidebarMenuButton>
                     </SidebarMenuItem>
                 ))}
-                </SidebarMenu>
+                </SidebarMenu>)}
             </SidebarGroupContent>
             </SidebarGroup>
     )
