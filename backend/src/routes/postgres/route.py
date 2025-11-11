@@ -1,11 +1,7 @@
-import json
 import logging
-import os
 from src.utils.open_ai.open_ai_client_manager import open_ai_client_manager
 from fastapi import APIRouter, Body, Depends, HTTPException
 from src.routes.postgres.models import ChatRequest
-from src.utils.pdf_parsing.page import load_pages
-from src.utils.helper import is_json
 from sqlalchemy.orm import Session
 from src.utils.postgres.connection_handler import db_manager
 from src.utils.postgres.models import Documents, Embeddings
@@ -13,6 +9,7 @@ from sqlalchemy import select
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
 
 @router.post("/query-db-search-demo")
 async def db_search_demo(
@@ -32,7 +29,9 @@ async def db_search_demo(
                 Embeddings.id,
                 Embeddings.content,
                 Documents.file_name,
-                Embeddings.vector.cosine_distance(user_message_vector).label("distance")
+                Embeddings.vector.cosine_distance(user_message_vector).label(
+                    "distance"
+                ),
             )
             .join(Documents, Embeddings.document_id == Documents.id)
             .order_by("distance")
@@ -44,7 +43,9 @@ async def db_search_demo(
             {
                 "document_id": str(row.id),
                 "file_name": row.file_name,
-                "similarity_score": float(1 - row.distance),  # converts distance to similarity score
+                "similarity_score": float(
+                    1 - row.distance
+                ),  # converts distance to similarity score
                 "content_snippet": row.content[:200] if row.content else None,
             }
             for row in results

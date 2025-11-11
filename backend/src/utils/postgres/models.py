@@ -1,7 +1,8 @@
-from sqlalchemy import Column, DateTime, Text, ForeignKey, func
+from sqlalchemy import Column, DateTime, Text, ForeignKey, func, Boolean
 from src.utils.postgres.connection_handler import Base
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from pgvector.sqlalchemy import Vector
+from sqlalchemy.orm import relationship
 
 
 class Documents(Base):
@@ -44,3 +45,68 @@ class Embeddings(Base):
 
     def __repr__(self):
         return f"<Embeddings(id={self.id}, document_id='{self.document_id}')>"
+
+
+class Users(Base):
+    __tablename__ = "users"
+
+    # Google "sub" — globally unique user ID
+    sub = Column(Text, primary_key=True, unique=True, index=True)
+    name = Column(Text, nullable=False)
+    email = Column(Text, nullable=False)
+    picture = Column(Text, nullable=True)
+
+    chats = relationship("Chats", back_populates="user", cascade="all, delete")
+
+    def __repr__(self):
+        return f"<Users(sub={self.sub}, email='{self.email}')>"
+
+
+class Chats(Base):
+    __tablename__ = "chats"
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        index=True,
+        server_default=func.gen_random_uuid(),
+    )
+    user_sub = Column(
+        Text,
+        ForeignKey("users.sub", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("Users", back_populates="chats")
+    messages = relationship("Messages", back_populates="chat", cascade="all, delete")
+
+    def __repr__(self):
+        return f"<Chats(id={self.id}, created_at='{self.created_at}')>"
+
+
+class Messages(Base):
+    __tablename__ = "messages"
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        index=True,
+        server_default=func.gen_random_uuid(),
+    )
+    chat_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("chats.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    sent_by_user = Column(Boolean, nullable=False)
+    message_metadata = Column("metadata", JSONB, nullable=True)
+    content = Column(Text, nullable=False)
+
+    chat = relationship("Chats", back_populates="messages")
+
+    def __repr__(self):
+        return f"<Messages(id={self.id}, content='{self.content}')>"
