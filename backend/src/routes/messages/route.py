@@ -1,13 +1,17 @@
 import logging
+import os
 from uuid import UUID
 
 from fastapi.responses import JSONResponse
-from src.routes.security import get_current_user, get_registered_user
+from src.routes.security import get_registered_user
 from fastapi import APIRouter, Body, Depends
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from src.utils.postgres.connection_handler import db_manager
 from src.utils.postgres.models import Chats, Users, Messages
 from src.routes.messages.models import NewMessageRequest
+from src.utils.open_ai.open_ai_client_manager import open_ai_client_manager
+from openai.types.chat import ChatCompletionChunk
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -49,17 +53,43 @@ async def create_chat_message(
     db.commit()
     db.refresh(new_message)
 
-    return JSONResponse(
-        status_code=200,
-        content={
-            "message_id": str(new_message.id),
-            "chat_id": str(chat.id),
-            "sent_by_user": new_message.sent_by_user,
-            "content": new_message.content,
-            "metadata": new_message.message_metadata,
-            "created_at": new_message.created_at.isoformat(),
-        },
-    )
+    prompt_template = open_ai_client_manager.load_template("qa")
+    stream = await open_ai_client_manager.run_streamed_prompt_template(request.message, template=prompt_template, variables={})
+
+    # Note: We shouldnt need to return the user message as the frontend can store it locally and reload it on returning to the chat
+    # TODO: Stream the AI response after storing the user message!
+
+    # return JSONResponse(
+    #     status_code=200,
+    #     content={
+    #         "message_id": str(new_message.id),
+    #         "chat_id": str(chat.id),
+    #         "sent_by_user": new_message.sent_by_user,
+    #         "content": new_message.content,
+    #         "metadata": new_message.message_metadata,
+    #         "created_at": new_message.created_at.isoformat(),
+    #     },
+    # )
+    async def process_stream():
+        ai_response = ""
+        async for event in stream:
+            if isinstance(event, ChatCompletionChunk):
+                for choice in event.choices:
+                    ai_response += choice.delta.content or ''
+                    yield choice.delta.content or ''
+            yield ''
+
+        new_ai_message = Messages(
+            chat_id=chat.id,
+            content=ai_response,
+            sent_by_user=False,
+            message_metadata={},
+        )
+        db.add(new_ai_message)
+        db.commit()
+        db.refresh(new_ai_message)
+
+    return StreamingResponse(process_stream(), media_type="text/event-stream")
 
 
 @router.get("/{chat_id}")
