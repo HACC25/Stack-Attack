@@ -3,12 +3,15 @@ import os
 from uuid import UUID
 
 from fastapi.responses import JSONResponse
+from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import selectinload
 from src.routes.security import get_registered_user
 from fastapi import APIRouter, Body, Depends
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.postgres.connection_handler import db_manager
-from src.utils.postgres.models import Chats, Users, Messages
+from src.utils.postgres.models import Chats, TokenUsage, Users, Messages
 from src.routes.messages.models import NewMessageRequest
 from src.utils.open_ai.open_ai_client_manager import open_ai_client_manager
 from openai.types.chat import ChatCompletionChunk
@@ -21,7 +24,7 @@ logger = logging.getLogger(__name__)
 async def create_chat_message(
     request: NewMessageRequest = Body(...),
     user: Users = Depends(get_registered_user),
-    db: Session = Depends(db_manager.get_db),
+    db: AsyncSession = Depends(db_manager.get_db),
 ):
     """
     Save a new message to a chat for the authenticated and registered user.
@@ -33,11 +36,10 @@ async def create_chat_message(
             status_code=400, content={"error": "Invalid chat_id format"}
         )
 
-    chat = (
-        db.query(Chats)
-        .filter(Chats.id == chat_uuid, Chats.user_sub == user.sub)
-        .first()
+    result = await db.execute(
+        select(Chats).filter(Chats.id == chat_uuid, Chats.user_sub == user.sub)
     )
+    chat = result.scalars().first()
     if not chat:
         return JSONResponse(
             status_code=404, content={"error": "Chat not found or access denied"}
@@ -50,8 +52,8 @@ async def create_chat_message(
         message_metadata=request.metadata,
     )
     db.add(new_message)
-    db.commit()
-    db.refresh(new_message)
+    await db.commit()
+    await db.refresh(new_message)
 
     prompt_template = open_ai_client_manager.load_template("qa")
     stream = await open_ai_client_manager.run_streamed_prompt_template(request.message, template=prompt_template, variables={})
@@ -72,6 +74,9 @@ async def create_chat_message(
     # )
     async def process_stream():
         ai_response = ""
+        prompt_tokens = 0
+        completion_tokens = 0
+        total_tokens = 0
         async for event in stream:
             if isinstance(event, ChatCompletionChunk):
                 for choice in event.choices:
@@ -79,15 +84,41 @@ async def create_chat_message(
                     yield choice.delta.content or ''
             yield ''
 
+            if event.usage:
+                prompt_tokens = event.usage.prompt_tokens
+                completion_tokens = event.usage.completion_tokens
+                total_tokens = event.usage.total_tokens
+
         new_ai_message = Messages(
             chat_id=chat.id,
             content=ai_response,
             sent_by_user=False,
             message_metadata={},
         )
+
         db.add(new_ai_message)
-        db.commit()
-        db.refresh(new_ai_message)
+        await db.commit()
+        await db.refresh(new_ai_message)
+
+        stmt = insert(TokenUsage).values(
+            user_sub=user.sub,
+            message_count=1,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+        ).on_conflict_do_update(
+            index_elements=["user_sub"],
+            set_={
+                "message_count": TokenUsage.message_count + 1,
+                "prompt_tokens": TokenUsage.prompt_tokens + prompt_tokens,
+                "completion_tokens": TokenUsage.completion_tokens + completion_tokens,
+                "total_tokens": TokenUsage.total_tokens + total_tokens,
+                "updated_at": func.now(),
+            }
+        )
+
+        await db.execute(stmt)
+        await db.commit()
 
     return StreamingResponse(process_stream(), media_type="text/event-stream")
 
@@ -96,7 +127,7 @@ async def create_chat_message(
 async def get_chat_messages(
     chat_id: str,
     user: Users = Depends(get_registered_user),
-    db: Session = Depends(db_manager.get_db),
+    db: AsyncSession = Depends(db_manager.get_db),
 ):
     """
     Retrieve all messages for a chat belonging to the authenticated user.
@@ -108,11 +139,12 @@ async def get_chat_messages(
             status_code=400, content={"error": "Invalid chat_id format"}
         )
 
-    chat = (
-        db.query(Chats)
+    result = await db.execute(
+        select(Chats)
+        .options(selectinload(Chats.messages))  # eager load messages cannot lazy load like in sync scenario 
         .filter(Chats.id == chat_uuid, Chats.user_sub == user.sub)
-        .first()
     )
+    chat = result.scalars().first()
     if not chat:
         return JSONResponse(
             status_code=404, content={"error": "Chat not found or access denied"}

@@ -40,7 +40,8 @@ async def lifespan(app: FastAPI):
     print("🚀 Starting up the app...")
     ## This should create all tables, but will not handle table migrations.
     ## Refer to alembic if table migrations are needed.
-    Base.metadata.create_all(bind=db_manager.db_engine)
+    async with db_manager.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     yield
     print("👋 Shutting down the app...")
 
@@ -117,7 +118,7 @@ async def auth_callback(request: Request):
         headers = {"Authorization": f"Bearer {token_data['access_token']}"}
         user_response = await client.get(GOOGLE_USERINFO_URL, headers=headers)
         user_info = user_response.json()
-    store_user_info(user_info=user_info)
+    await store_user_info(user_info=user_info)
     # Create our own JWT
     access_token = create_access_token(
         {"sub": user_info["sub"], "email": user_info["email"]}

@@ -74,7 +74,9 @@ class Open_AI_Client_Manager:
             stream = await self.client.chat.completions.create(
                 model=model,
                 messages=messages,
-                stream=True
+                stream=True,
+                stream_options={"include_usage": True},
+                max_completion_tokens=3000,
             )
             return stream
         except Exception as e:
@@ -93,7 +95,7 @@ class Open_AI_Client_Manager:
             usage = getattr(embedding, "usage", None)
             data = embedding.data[0]
 
-            print(f"Embedding usage: {usage}")
+            print(f"Embedding usage: {usage}") ## Can include later into some indexing usage pipeline
             print(f"Embedding length: {len(data.embedding)}")
 
             return data.embedding

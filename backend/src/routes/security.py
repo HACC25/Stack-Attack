@@ -2,8 +2,9 @@ from datetime import datetime, timedelta, timezone
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
+from sqlalchemy import select
 from src.utils.env_helper import get_setting
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.postgres.connection_handler import db_manager
 from src.utils.postgres.models import Users
 
@@ -40,15 +41,17 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-def get_registered_user(
+async def get_registered_user(
     current_user: dict = Depends(get_current_user),
-    db: Session = Depends(db_manager.get_db),
+    db: AsyncSession = Depends(db_manager.get_db),
 ):
     """
     Dependency that checks if the current user exists in the Users table.
     Returns the DB user object if found, otherwise raises 403.
     """
-    user = db.query(Users).filter(Users.email == current_user["email"]).first()
+    stmt = select(Users).filter(Users.email == current_user["email"])
+    result = await db.execute(stmt)
+    user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=403, detail="User not registered")
     return user

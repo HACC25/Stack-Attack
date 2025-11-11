@@ -1,27 +1,29 @@
 import json
 import logging
 import os
+from sqlalchemy import delete, select
+from src.routes.security import get_registered_user
 from src.utils.open_ai.open_ai_client_manager import open_ai_client_manager
 from fastapi import APIRouter, Depends, HTTPException
 from src.routes.open_ai.models import ChatRequest
 from src.utils.pdf_parsing.page import load_pages
 from src.utils.helper import is_json
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.postgres.connection_handler import db_manager
-from src.utils.postgres.models import Documents, Embeddings
+from src.utils.postgres.models import Documents, Embeddings, Users
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
 @router.post("/demo")
-async def chat_demo(request: ChatRequest):
+async def chat_demo(request: ChatRequest, user: Users = Depends(get_registered_user)):
     response = await open_ai_client_manager.get_chat_model(user_message=request.message)
     return {"response": response}
 
 
 @router.post("/ingestion_demo")
-async def sample_ingestion(db: Session = Depends(db_manager.get_db)):
+async def sample_ingestion(user: Users = Depends(get_registered_user), db: AsyncSession = Depends(db_manager.get_db)):
     try:
         root = os.getcwd()
         ingestion_location = os.path.join(root, "src", ".files", "bargaining")
@@ -54,7 +56,8 @@ async def sample_ingestion(db: Session = Depends(db_manager.get_db)):
             start_date = response_json.get("start_date")
             end_date = response_json.get("end_date")
 
-            document = db.query(Documents).filter_by(file_name=filename).first()
+            result = await db.execute(select(Documents).filter_by(file_name=filename))
+            document = result.scalars().first()
 
             if document:
                 updated = any(
@@ -74,9 +77,10 @@ async def sample_ingestion(db: Session = Depends(db_manager.get_db)):
                     document.target_audience = target_audience
                     document.start_date = start_date
                     document.end_date = end_date
-                    deleted_count = (
-                        db.query(Embeddings).filter_by(document_id=document.id).delete()
-                    )
+                    stmt = delete(Embeddings).where(Embeddings.document_id == document.id)
+                    result = await db.execute(stmt)
+                    await db.commit()
+                    deleted_count = result.rowcount
                     logger.info(
                         f"Deleted {deleted_count} old embeddings for {filename}"
                     )
@@ -96,7 +100,7 @@ async def sample_ingestion(db: Session = Depends(db_manager.get_db)):
                     end_date=end_date,
                 )
                 db.add(document)
-                db.flush()  # Make sure document.id is available
+                await db.flush()  # Make sure document.id is available
                 logger.info(f"Inserted new document: {filename}")
 
             for page_number, page in enumerate(pages, start=1):
@@ -119,12 +123,12 @@ async def sample_ingestion(db: Session = Depends(db_manager.get_db)):
                 db.add(embedding_entry)
                 logger.info(f"Added embedding for page {page_number} in {filename}")
 
-            db.commit()
+            await db.commit()
 
         logger.info("Ingestion Process Completed Successfully")
         return {"message": "Ingestion process completed successfully."}
 
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error(f"Error during ingestion: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Error: {str(e)}")

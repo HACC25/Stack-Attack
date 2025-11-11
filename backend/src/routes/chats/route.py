@@ -1,9 +1,10 @@
 import logging
 
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 from src.routes.security import get_registered_user
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.postgres.connection_handler import db_manager
 from src.utils.postgres.models import Chats, Users
 
@@ -14,15 +15,15 @@ logger = logging.getLogger(__name__)
 @router.post("/")
 async def create_chat(
     user: Users = Depends(get_registered_user),
-    db: Session = Depends(db_manager.get_db),
+    db: AsyncSession = Depends(db_manager.get_db),
 ):
     """
     Create a new chat for the authenticated and registered user.
     """
     new_chat = Chats(user_sub=user.sub)
     db.add(new_chat)
-    db.commit()
-    db.refresh(new_chat)
+    await db.commit()
+    await db.refresh(new_chat)
 
     new_chat_info = {
         "chat_id": str(new_chat.id),
@@ -35,12 +36,14 @@ async def create_chat(
 @router.get("/")
 async def get_chats_for_user(
     user: Users = Depends(get_registered_user),
-    db: Session = Depends(db_manager.get_db),
+    db: AsyncSession = Depends(db_manager.get_db),
 ):
     """
     Retrieve all chats for the authenticated and registered user.
     """
-    chats = db.query(Chats).filter(Chats.user_sub == user.sub).all()
+    stmt = select(Chats).where(Chats.user_sub == user.sub)
+    result = await db.execute(stmt)
+    chats = result.scalars().all()
 
     chat_list = [
         {
