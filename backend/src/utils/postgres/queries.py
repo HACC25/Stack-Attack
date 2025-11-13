@@ -2,6 +2,7 @@ from src.utils.postgres.connection_handler import db_manager
 from src.utils.postgres.models import Users
 from sqlalchemy import select
 
+
 async def store_user_info(user_info: dict):
     async for db in db_manager.get_db():
         stmt = select(Users).filter(Users.sub == user_info["sub"])

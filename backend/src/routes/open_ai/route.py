@@ -23,7 +23,10 @@ async def chat_demo(request: ChatRequest, user: Users = Depends(get_registered_u
 
 
 @router.post("/ingestion_demo")
-async def sample_ingestion(user: Users = Depends(get_registered_user), db: AsyncSession = Depends(db_manager.get_db)):
+async def sample_ingestion(
+    user: Users = Depends(get_registered_user),
+    db: AsyncSession = Depends(db_manager.get_db),
+):
     try:
         root = os.getcwd()
         ingestion_location = os.path.join(root, "src", ".files", "bargaining")
@@ -77,7 +80,9 @@ async def sample_ingestion(user: Users = Depends(get_registered_user), db: Async
                     document.target_audience = target_audience
                     document.start_date = start_date
                     document.end_date = end_date
-                    stmt = delete(Embeddings).where(Embeddings.document_id == document.id)
+                    stmt = delete(Embeddings).where(
+                        Embeddings.document_id == document.id
+                    )
                     result = await db.execute(stmt)
                     await db.commit()
                     deleted_count = result.rowcount
