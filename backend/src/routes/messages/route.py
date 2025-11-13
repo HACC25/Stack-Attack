@@ -98,7 +98,7 @@ async def create_chat_message(
     ]
     document_contents: str = ""
     for search_content in matches:
-        document_contents += f"<{search_content.get("file_name", "failed to fetch title")} target_audience={search_content.get("target_audience", "")}>\n{search_content.get("content_snippet", "")}\n<{search_content.get("file_name", "failed to fetch title")} End>\n\n"
+        document_contents += f"<{search_content.get("file_name", "failed to fetch title")} target_audience={search_content.get("target_audience", "")}>\n{search_content.get("content_snippet", "")}\n</{search_content.get("file_name", "failed to fetch title")}>\n\n"
 
     prompt_template = open_ai_client_manager.load_template("qa")
     stream = await open_ai_client_manager.run_streamed_prompt_template(
