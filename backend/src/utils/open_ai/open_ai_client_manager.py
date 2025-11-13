@@ -30,7 +30,7 @@ class Open_AI_Client_Manager:
         variables: dict,
         user_message: str | None = None,
         model: str = "gpt-4o",
-    ):
+    ) -> str | None:
         try:
             prompt_template = PromptTemplate.from_template(template=template)
             prompt_value = prompt_template.format(**variables)
