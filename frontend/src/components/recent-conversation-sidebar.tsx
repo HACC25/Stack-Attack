@@ -7,6 +7,8 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar"
+import { AppRecentConversationDropdown } from "./ui/recent-conversation-dropdown";
+import { Button } from "./ui/button";
 
 interface ConversationProp{
     id:string;
@@ -59,7 +61,10 @@ export function AppRecentConversationSidebar(){
                 {sortedConversation.map((Conversation) => (
                     <SidebarMenuItem key={Conversation.id}>
                     <SidebarMenuButton asChild>
-                        <a><span>{Conversation.title}</span></a>
+                        <div>
+                            <a className="truncate"><span className="truncate">{Conversation.title}</span></a>
+                            <AppRecentConversationDropdown/>
+                        </div>
                     </SidebarMenuButton>
                     </SidebarMenuItem>
                 ))}
