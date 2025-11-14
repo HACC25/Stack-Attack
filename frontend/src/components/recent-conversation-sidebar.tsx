@@ -8,8 +8,7 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar"
 import { AppRecentConversationDropdown } from "./ui/recent-conversation-dropdown";
-import { Button } from "./ui/button";
-import { Tooltip, TooltipContent } from "./ui/tooltip";
+import { Tooltip } from "./ui/tooltip";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { AppRecentConversationTooltip } from "./recent-conversation-tooltips";
 
