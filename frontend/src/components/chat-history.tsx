@@ -1,8 +1,6 @@
 import {Message} from "@/components/chat-message"
 import type { MessageProp } from "@/components/chat-message"
 
-
-
 const example_Messages:MessageProp[] = [
     {
         message_id: "90917c27-6866-4a4f-8a06-5b42e5ff96c9",
