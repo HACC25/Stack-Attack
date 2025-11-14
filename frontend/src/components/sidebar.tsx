@@ -24,7 +24,7 @@ export function AppSidebar() {
 
     const isCollapsed = state === 'collapsed';
     return (
-        <Sidebar collapsible="icon">
+        <Sidebar variant="floating" collapsible="icon">
         <SidebarHeader className="!flex-row justify-between">
             <SidebarButton/>
             {
