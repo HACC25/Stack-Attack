@@ -7,6 +7,10 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar"
+import { AppRecentConversationDropdown } from "./ui/recent-conversation-dropdown";
+import { Tooltip } from "./ui/tooltip";
+import { TooltipTrigger } from "@radix-ui/react-tooltip";
+import { AppRecentConversationTooltip } from "./recent-conversation-tooltips";
 
 interface ConversationProp{
     id:string;
@@ -57,11 +61,20 @@ export function AppRecentConversationSidebar(){
             <SidebarGroupContent>
                 {!isCollapsed&&(<SidebarMenu>
                 {sortedConversation.map((Conversation) => (
-                    <SidebarMenuItem key={Conversation.id}>
-                    <SidebarMenuButton asChild>
-                        <a><span>{Conversation.title}</span></a>
-                    </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <SidebarMenuItem key={Conversation.id}>
+                            
+                                <SidebarMenuButton asChild>
+                                    <div>
+                                        <a className="truncate"><span className="truncate">{Conversation.title}</span></a>
+                                        <AppRecentConversationDropdown/>
+                                    </div>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </TooltipTrigger>
+                        <AppRecentConversationTooltip conversationTimestamp={Conversation.timestamp} conversationTitle={Conversation.title}/>
+                    </Tooltip>
                 ))}
                 </SidebarMenu>)}
             </SidebarGroupContent>
