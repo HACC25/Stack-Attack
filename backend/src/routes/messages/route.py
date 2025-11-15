@@ -11,7 +11,14 @@ from fastapi import APIRouter, Body, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.postgres.connection_handler import db_manager
-from src.utils.postgres.models import Chats, TokenUsage, Users, Messages
+from src.utils.postgres.models import (
+    Chats,
+    Documents,
+    Embeddings,
+    TokenUsage,
+    Users,
+    Messages,
+)
 from src.routes.messages.models import NewMessageRequest
 from src.utils.open_ai.open_ai_client_manager import open_ai_client_manager
 from openai.types.chat import ChatCompletionChunk
@@ -55,23 +62,51 @@ async def create_chat_message(
     await db.commit()
     await db.refresh(new_message)
 
+    # (Maybe TODO) Get the full chat history to load into the prompt
+
+    # Get search documents
+    user_message_vector = await open_ai_client_manager.run_embed(request.message)
+    distance_label = Embeddings.vector.cosine_distance(user_message_vector).label(
+        "distance"
+    )
+    stmt = (
+        select(
+            Embeddings.id,
+            Embeddings.content,
+            Documents.file_name,
+            Documents.target_audience,
+            distance_label,
+        )
+        .join(Documents, Embeddings.document_id == Documents.id)
+        .order_by(distance_label)
+        .limit(5)  # top 5 scores only
+    )
+
+    result = await db.execute(stmt)
+    results = result.fetchall()
+    matches = [
+        {
+            "document_id": str(row.id),
+            "file_name": row.file_name,
+            "similarity_score": float(
+                1 - row.distance
+            ),  # converts distance to similarity score
+            "content_snippet": row.content if row.content else None,
+            "target_audience": row.target_audience,
+        }
+        for row in results
+    ]
+    document_contents: str = ""
+    for search_content in matches:
+        document_contents += f"<{search_content.get("file_name", "failed to fetch title")} target_audience={search_content.get("target_audience", "")}>\n{search_content.get("content_snippet", "")}\n</{search_content.get("file_name", "failed to fetch title")}>\n\n"
+
     prompt_template = open_ai_client_manager.load_template("qa")
-    stream = await open_ai_client_manager.run_streamed_prompt_template(request.message, template=prompt_template, variables={})
+    stream = await open_ai_client_manager.run_streamed_prompt_template(
+        request.message,
+        template=prompt_template,
+        variables={"search_content": document_contents},
+    )
 
-    # Note: We shouldnt need to return the user message as the frontend can store it locally and reload it on returning to the chat
-    # TODO: Stream the AI response after storing the user message!
-
-    # return JSONResponse(
-    #     status_code=200,
-    #     content={
-    #         "message_id": str(new_message.id),
-    #         "chat_id": str(chat.id),
-    #         "sent_by_user": new_message.sent_by_user,
-    #         "content": new_message.content,
-    #         "metadata": new_message.message_metadata,
-    #         "created_at": new_message.created_at.isoformat(),
-    #     },
-    # )
     async def process_stream():
         ai_response = ""
         prompt_tokens = 0
@@ -80,9 +115,9 @@ async def create_chat_message(
         async for event in stream:
             if isinstance(event, ChatCompletionChunk):
                 for choice in event.choices:
-                    ai_response += choice.delta.content or ''
-                    yield choice.delta.content or ''
-            yield ''
+                    ai_response += choice.delta.content or ""
+                    yield choice.delta.content or ""
+            yield ""
 
             if event.usage:
                 prompt_tokens = event.usage.prompt_tokens
@@ -100,21 +135,26 @@ async def create_chat_message(
         await db.commit()
         await db.refresh(new_ai_message)
 
-        stmt = insert(TokenUsage).values(
-            user_sub=user.sub,
-            message_count=1,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            total_tokens=total_tokens,
-        ).on_conflict_do_update(
-            index_elements=["user_sub"],
-            set_={
-                "message_count": TokenUsage.message_count + 1,
-                "prompt_tokens": TokenUsage.prompt_tokens + prompt_tokens,
-                "completion_tokens": TokenUsage.completion_tokens + completion_tokens,
-                "total_tokens": TokenUsage.total_tokens + total_tokens,
-                "updated_at": func.now(),
-            }
+        stmt = (
+            insert(TokenUsage)
+            .values(
+                user_sub=user.sub,
+                message_count=1,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+            )
+            .on_conflict_do_update(
+                index_elements=["user_sub"],
+                set_={
+                    "message_count": TokenUsage.message_count + 1,
+                    "prompt_tokens": TokenUsage.prompt_tokens + prompt_tokens,
+                    "completion_tokens": TokenUsage.completion_tokens
+                    + completion_tokens,
+                    "total_tokens": TokenUsage.total_tokens + total_tokens,
+                    "updated_at": func.now(),
+                },
+            )
         )
 
         await db.execute(stmt)
@@ -141,7 +181,9 @@ async def get_chat_messages(
 
     result = await db.execute(
         select(Chats)
-        .options(selectinload(Chats.messages))  # eager load messages cannot lazy load like in sync scenario 
+        .options(
+            selectinload(Chats.messages)
+        )  # eager load messages cannot lazy load like in sync scenario
         .filter(Chats.id == chat_uuid, Chats.user_sub == user.sub)
     )
     chat = result.scalars().first()
