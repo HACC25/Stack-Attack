@@ -26,6 +26,7 @@ async def create_chat(
     await db.refresh(new_chat)
 
     new_chat_info = {
+        "title": new_chat.chat_title if new_chat.chat_title else f"chat_{new_chat.id}", ## This is a temporary title to ensure one exists during chat creation (real title is created on first user message)
         "chat_id": str(new_chat.id),
         "user_email": user.email,
         "created_at": new_chat.created_at.isoformat(),
@@ -47,6 +48,7 @@ async def get_chats_for_user(
 
     chat_list = [
         {
+            "title": chat.chat_title,
             "chat_id": str(chat.id),
             "created_at": chat.created_at.isoformat(),
         }
