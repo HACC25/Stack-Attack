@@ -88,6 +88,12 @@ class Chats(Base):
         nullable=False,
         index=True,
     )
+    chat_title = Column(
+        Text,
+        nullable=True,
+        index=True,
+    )
+    target_audience = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("Users", back_populates="chats")

@@ -52,6 +52,23 @@ async def create_chat_message(
             status_code=404, content={"error": "Chat not found or access denied"}
         )
 
+    message_count_result = await db.execute(
+        select(func.count(Messages.id)).filter(Messages.chat_id == chat.id)
+    )
+    message_count = message_count_result.scalar()
+
+    if message_count == 0:
+        title_prompt = f"Create a short, descriptive chat title (max 6 words) based on this message:\n\n{request.message}"
+        title_response: str | None = await open_ai_client_manager.run_prompt_template(
+            template=title_prompt,
+            variables={}
+        )
+        if isinstance(title_response, str):
+            chat.chat_title = title_response.strip().replace('"', "")
+            await db.commit()
+        else:
+            print("Failed to create chat title. LLM response is not a string")
+
     new_message = Messages(
         chat_id=chat.id,
         content=request.message,
