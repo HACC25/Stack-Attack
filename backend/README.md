@@ -1,7 +1,7 @@
 # Install Poetry 
 - Go to: https://python-poetry.org/docs/#installing-with-the-official-installer
     - Follow installation steps
-- Run `poetry --version` on a new powershell instance to confirm successful installation
+- Run `poetry --version` on a new PowerShell instance to confirm successful installation
     - Restarting VSC may be required
 - Set poetry config to in-project venv: `poetry config virtualenvs.in-project true`
 - Create venv and install packages with `poetry install` or with `python -m venv .venv`
@@ -29,9 +29,12 @@
 To run the data ingestion sample route, add the following folder(s) to the src folder:
 - ".files/bargaining"
 
-Go to [Hawaii Bargainaing Documents](https://dhrd.hawaii.gov/state-hr-professionals/lro/public-emp-excl-reps/), download any of the PDFs and add it to the bargaining files folder. 
+Go to [Hawaii Bargaining Documents](https://dhrd.hawaii.gov/state-hr-professionals/lro/public-emp-excl-reps/), download any of the PDFs, and add them to the bargaining files folder. 
 
 Now run the `/ingestion` route! The outputs will be stored in the documents table in PostgreSQL.
+
+**NOTE**: Due to time constraints, this route is not available through any admin page of sorts. Users must go to "{backend url}/docs" page to run the route. 
+    - Ensure you are authorized first by clicking the authorize button and adding the token details needed to run the route.
 
 # Postgresql
 
@@ -39,7 +42,7 @@ Now run the `/ingestion` route! The outputs will be stored in the documents tabl
 - Create an RDS PostgreSQL instance
     - Store the instance name, endpoint, port, username, and password in an ENV file.
         - See env.sample 
-- To allow connections locallay or on an external IP, go to the AWS portal > EC2
+- To allow connections locally or on an external IP, go to the AWS portal > EC2
     - Find the default security option and click it
     - Navigate to inbound rules and select "Edit inbound rules"
     - Add a new rule of type "PostgreSQL" then select the source "My IP"
@@ -47,18 +50,18 @@ Now run the `/ingestion` route! The outputs will be stored in the documents tabl
 
 ## Injestion 
 
-`/ingestion_demo` route takes a lengthly amount of time. Depending on the amount of documents to index, this process may take upwards of 15 minutes.
+`/ingestion_demo` route takes a lengthy amount of time. Depending on the number of documents to index, this process may take upwards of 15 minutes.
 DO NOT run this process unless you want to re-index the entire bargaining document repository. 
 
 TODO: Make a background process and a tracker to avoid API interuptions. 
-TODO: Avoid un-needed upserts.
+TODO: Avoid unnecessary upserts.
     - Make an update folder to avoid upserting the same file more than once
     - OR ignore the same file names unless explicitly stated
 
 # AUTH
 
 Using Google OAUTH for authenticating users. 
-On successful Authentification, users are redirected back to the frontend home page `/auth/callback`.
+On successful authentication, users are redirected back to the frontend home page `/auth/callback`.
 Store credentials on that page as needed.
 
 Newer routes are now secured using a custom JWT derived from the Google auth access token.
@@ -67,4 +70,4 @@ If the token cannot be decoded using the secret token, return error 401 (auth er
 
 IMPORTANT: We do not store any email passwords, nor do we read any of these values. Your privacy is of utmost importance.
 
-TODO: Establish allow domains
+TODO: Establish allowed domains
