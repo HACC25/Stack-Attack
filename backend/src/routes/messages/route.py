@@ -10,6 +10,7 @@ from src.routes.security import get_registered_user
 from fastapi import APIRouter, Body, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.utils.helper import reset_daily_usage_if_needed
 from src.utils.postgres.connection_handler import db_manager
 from src.utils.postgres.models import (
     Chats,
@@ -25,6 +26,7 @@ from openai.types.chat import ChatCompletionChunk
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+DAILY_LIMIT = 350000  ## Daily total token limit on end users
 
 
 @router.post("/message")
@@ -79,6 +81,29 @@ async def create_chat_message(
     await db.refresh(new_message)
 
     # (Maybe TODO) Get the full chat history to load into the prompt
+
+    # Get or create usage record
+    result = await db.execute(select(TokenUsage).where(TokenUsage.user_sub == user.sub))
+    usage = result.scalars().first()
+
+    if not usage:
+        usage = TokenUsage(user_sub=user.sub)
+        db.add(usage)
+        await db.commit()
+        await db.refresh(usage)
+
+    usage = await reset_daily_usage_if_needed(db, usage)
+
+    # BLOCK the route if the end user is consuming the too many tokens
+    if usage.daily_tokens >= DAILY_LIMIT:
+        return JSONResponse(
+            status_code=429,
+            content={
+                "error": "Daily usage limit exceeded",
+                "daily_tokens": usage.daily_tokens,
+                "limit": DAILY_LIMIT,
+            },
+        )
 
     # Get search documents
     user_message_vector = await open_ai_client_manager.run_embed(request.message)
@@ -159,6 +184,7 @@ async def create_chat_message(
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
                 total_tokens=total_tokens,
+                daily_tokens=prompt_tokens + completion_tokens,
             )
             .on_conflict_do_update(
                 index_elements=["user_sub"],
@@ -168,6 +194,9 @@ async def create_chat_message(
                     "completion_tokens": TokenUsage.completion_tokens
                     + completion_tokens,
                     "total_tokens": TokenUsage.total_tokens + total_tokens,
+                    "daily_tokens": TokenUsage.daily_tokens
+                    + prompt_tokens
+                    + completion_tokens,
                     "updated_at": func.now(),
                 },
             )
