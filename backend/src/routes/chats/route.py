@@ -51,6 +51,7 @@ async def get_chats_for_user(
             "title": chat.chat_title,
             "chat_id": str(chat.id),
             "created_at": chat.created_at.isoformat(),
+            "pinned": chat.pinned,
         }
         for chat in chats
     ]
