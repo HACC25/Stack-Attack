@@ -1,4 +1,14 @@
-from sqlalchemy import Column, DateTime, Text, ForeignKey, func, Boolean, BIGINT, text, INT
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Text,
+    ForeignKey,
+    func,
+    Boolean,
+    BIGINT,
+    text,
+    INT,
+)
 from src.utils.postgres.connection_handler import Base
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from pgvector.sqlalchemy import Vector
@@ -78,6 +88,12 @@ class Chats(Base):
         nullable=False,
         index=True,
     )
+    chat_title = Column(
+        Text,
+        nullable=True,
+        index=True,
+    )
+    target_audience = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("Users", back_populates="chats")
@@ -85,7 +101,8 @@ class Chats(Base):
 
     def __repr__(self):
         return f"<Chats(id={self.id}, created_at='{self.created_at}')>"
-    
+
+
 class TokenUsage(Base):
     __tablename__ = "token_usage"
 
@@ -103,7 +120,9 @@ class TokenUsage(Base):
         unique=True,
     )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
     message_count = Column(INT, nullable=False, server_default=text("0"))
     prompt_tokens = Column(BIGINT, nullable=False, server_default=text("0"))
     completion_tokens = Column(BIGINT, nullable=False, server_default=text("0"))

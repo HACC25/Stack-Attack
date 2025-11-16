@@ -24,7 +24,9 @@ async def db_search_demo(
     """
     try:
         user_message_vector = await open_ai_client_manager.run_embed(request.message)
-        distance_label = Embeddings.vector.cosine_distance(user_message_vector).label("distance")
+        distance_label = Embeddings.vector.cosine_distance(user_message_vector).label(
+            "distance"
+        )
         stmt = (
             select(
                 Embeddings.id,

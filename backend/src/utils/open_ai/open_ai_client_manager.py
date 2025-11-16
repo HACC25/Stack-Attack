@@ -1,3 +1,4 @@
+from typing import Any
 from openai import AsyncOpenAI, RateLimitError
 from src.utils.env_helper import get_setting
 import os
@@ -29,7 +30,7 @@ class Open_AI_Client_Manager:
         variables: dict,
         user_message: str | None = None,
         model: str = "gpt-4o",
-    ):
+    ) -> str | None:
         try:
             prompt_template = PromptTemplate.from_template(template=template)
             prompt_value = prompt_template.format(**variables)
@@ -80,7 +81,9 @@ class Open_AI_Client_Manager:
             )
             return stream
         except Exception as e:
-            print(f"[OpenAI Client stream ERROR] run_streamed_prompt_template failed: {e}")
+            print(
+                f"[OpenAI Client stream ERROR] run_streamed_prompt_template failed: {e}"
+            )
             raise
 
     async def run_embed(self, text: str):
@@ -95,7 +98,9 @@ class Open_AI_Client_Manager:
             usage = getattr(embedding, "usage", None)
             data = embedding.data[0]
 
-            print(f"Embedding usage: {usage}") ## Can include later into some indexing usage pipeline
+            print(
+                f"Embedding usage: {usage}"
+            )  ## Can include later into some indexing usage pipeline
             print(f"Embedding length: {len(data.embedding)}")
 
             return data.embedding
