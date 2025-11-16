@@ -215,3 +215,12 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .files
+
+# AWS
+.ebextensions
+.elasticbeanstalk
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
