@@ -1,7 +1,6 @@
 import { apiRequestCallback } from "./api"
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
-
 const LOGIN_REDIRECT = import.meta.env.VITE_LOGIN_REDIRECT_URL
 
 export const login_redirect = () => {
