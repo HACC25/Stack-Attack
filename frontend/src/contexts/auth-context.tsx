@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { apiRequestCallback } from "@/api/api";
+import { login, logout as AuthLogOut } from "@/api/authentication";
+import { createContext, useState, useEffect, useContext, type ReactNode } from "react"
 
 type User = {
     email: string;
@@ -8,15 +10,20 @@ type User = {
 type AuthContextType = {
     token: string | null;
     user: User | null;
+    loading: boolean;
+    error: string | null;
     setAuth: (token: string, email: string, name: string) => void;
+    checkAuth: () => void;
     logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({children}: { children: ReactNode }){
     const [token, setToken] = useState<string | null>(null);
     const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const savedToken = localStorage.getItem("access_token");
@@ -24,31 +31,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const savedName = localStorage.getItem("user_name");
 
         if (savedToken && savedEmail && savedName) {
-        setToken(savedToken);
-        setUser({ email: savedEmail, name: savedName });
+            setToken(savedToken);
+            setUser({ email: savedEmail, name: savedName });
         }
+        setLoading(false);
     }, []);
 
     const setAuth = (token: string, email: string, name: string) => {
-        localStorage.setItem("access_token", token);
-        localStorage.setItem("user_email", email);
-        localStorage.setItem("user_name", name);
+        login(token, email, name);
         setToken(token);
         setUser({ email, name });
     };
 
-    const logout = () => {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("user_email");
-        localStorage.removeItem("user_name");
-        setToken(null);
-        setUser(null);
-        window.location.href = "http://localhost:8000/login";
+    const checkAuth = async () => {
+        if (!token) return;
+        
+        try {
+            setError(null);
+            const res = await apiRequestCallback("/usage/user", {
+                method: "GET",
+                baseUrl: "http://localhost:8000",
+                token: token,
+            });
+            
+            if (!res.ok) {
+                setError("Session expired");
+                logout();
+            }
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : "Auth check failed";
+            console.error("Auth check failed:", err);
+            setError(errorMsg);
+            logout();
+        }
     };
 
+    const logout = () => {
+        setToken(null);
+        setUser(null);
+        AuthLogOut();
+    };
+
+    useEffect(() => {
+        if (!token) return;
+
+        const interval = setInterval(() => {
+            checkAuth();
+        }, 300000);
+
+        return () => clearInterval(interval);
+    }, [token]);
+
     return (
-        <AuthContext.Provider value={{ token, user, setAuth, logout }}>
-        {children}
+        <AuthContext.Provider value={{ token, user, loading, error, setAuth, checkAuth, logout }}>
+            {children}
         </AuthContext.Provider>
     );
 }

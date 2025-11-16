@@ -2,26 +2,17 @@ import './App.css'
 
 import { AppChat } from './components/chat'
 import Layout from '@/components/layout'
-import { AuthGuard } from './components/auth-guard'
-import { AuthProvider } from "@/contexts/auth-context";
-import { AuthCallback } from './components/auth-callback';
+import { AuthProvider } from '@/contexts/auth-context'
+import { AuthGate } from '@/components/auth-gate'
 
 function App() {
-  if (window.location.pathname === "/auth/callback") {
-    return (
-      <AuthProvider>
-        <AuthCallback />
-      </AuthProvider>
-    );
-  }
-
   return (
     <AuthProvider>
-      <AuthGuard>
+      <AuthGate>
         <Layout>
           <AppChat />
         </Layout>
-      </AuthGuard>
+      </AuthGate>
     </AuthProvider>
   );
 }
