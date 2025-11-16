@@ -2,8 +2,9 @@ import logging
 
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
+from src.routes.chats.models import AlterPinnedStatusRequest
 from src.routes.security import get_registered_user
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.postgres.connection_handler import db_manager
 from src.utils.postgres.models import Chats, Users
@@ -59,3 +60,24 @@ async def get_chats_for_user(
     return JSONResponse(
         status_code=200, content={"user_email": user.email, "chats": chat_list}
     )
+
+@router.post("/set-pinned-status")
+async def set_pinned_status(
+    request: AlterPinnedStatusRequest,
+    user: Users = Depends(get_registered_user),
+    db: AsyncSession = Depends(db_manager.get_db), 
+):
+    result = await db.execute(
+        select(Chats).where(Chats.id == request.chat_id)
+    )
+    chat = result.scalar_one_or_none()
+
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    chat.pinned = request.pinned
+
+    await db.commit()
+    await db.refresh(chat)
+
+    return chat
