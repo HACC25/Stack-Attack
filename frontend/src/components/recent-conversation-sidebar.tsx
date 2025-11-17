@@ -23,7 +23,7 @@ export function AppRecentConversationSidebar(){
     const {state} = useSidebar();
     
     const { token } = useAuth();
-    const {chats, reloadChats, selectChat, createConversation} = useConversation(token ?? "");
+    const {chats, reloadChats, selectChat, createConversation, selectedChatId} = useConversation(token ?? "");
 
     // Listen for global chats-updated events so this sidebar can refresh when another hook instance updates chats
     // (useConversation is currently per-component; this allows simple cross-instance synchronization)
@@ -73,7 +73,8 @@ export function AppRecentConversationSidebar(){
                 {(sort_chats ?? []).map((Conversation: ApiChat) => (
                     <Tooltip key={Conversation.chat_id}>
                         <TooltipTrigger asChild>
-                            <SidebarMenuItem key={Conversation.chat_id} onClick={() => {
+                            <SidebarMenuItem key={Conversation.chat_id} className={selectedChatId === Conversation.chat_id ? "bg-blue-100 dark:bg-blue-800 cursor-pointer" : "cursor-pointer"} 
+                                onClick={() => {
                                 try {
                                     // notify other components about the selected chat
                                     window.dispatchEvent(new CustomEvent('app:selected-chat', { detail: { chat_id: Conversation.chat_id } }));
