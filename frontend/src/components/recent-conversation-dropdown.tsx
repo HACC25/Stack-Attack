@@ -5,9 +5,11 @@ import { Card } from "./ui/card";
 import { useAuth } from "@/contexts/auth-context";
 import { deleteChat, pinChat } from "@/api/conversations";
 import React from "react";
+import { useConversation } from "@/hooks/use-conversation";
 
 export function AppRecentConversationDropdown({ chatId }: { chatId: string }){
     const { token } = useAuth();
+    const {selectedChatId} = useConversation((token ?? ""))
 
     const onDelete = React.useCallback(async () => {
         if (!token) return;
@@ -34,7 +36,7 @@ export function AppRecentConversationDropdown({ chatId }: { chatId: string }){
             <DropdownMenuTrigger asChild>
                     <EllipsisVertical />
             </DropdownMenuTrigger>
-            <DropdownMenuContent side={"right"} align={"start"} className="min-w-56 rounded-lg">
+            <DropdownMenuContent side={"right"} align={"start"} className="min-w-56 rounded-lg" onClick={(e) => e.stopPropagation()}>
                 <Card className="py-1">
                     <DropdownMenuGroup>
                     <DropdownMenuLabel>Conversation Settings</DropdownMenuLabel>

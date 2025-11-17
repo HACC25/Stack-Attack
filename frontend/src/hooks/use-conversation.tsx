@@ -75,7 +75,6 @@ export function useConversation(token: string) {
 		}
 	}, [token, safeTokenCheck]);
 
-	// Delete Chat
 	const deleteConversation = useCallback(
 		async (chatId: string) => {
 			safeTokenCheck();
@@ -84,29 +83,27 @@ export function useConversation(token: string) {
 			try {
 				await deleteChat(token, chatId);
 
-				// Remove deleted chat from chats and get remaining
 				let remainingChats: ApiChat[] = [];
 				setChats(prevChats => {
 					remainingChats = prevChats?.filter(c => c.chat_id !== chatId) || [];
 					return remainingChats;
 				});
 
-				// If the deleted chat was selected
 				if (selectedChatId === chatId) {
 					if (remainingChats.length > 0) {
-						// pick the most recent chat
 						const recentChat = remainingChats.reduce<ApiChat>((prev, curr) =>
 							new Date(curr.created_at) > new Date(prev.created_at) ? curr : prev
 						, remainingChats[0]);
 						setSelectedChatId(recentChat.chat_id);
+						window.dispatchEvent(new CustomEvent('app:selected-chat', { detail: { chat_id: recentChat.chat_id } }));
 					} else {
-						// no chats left, create a new one and set it
-						const newChat = await createConversation();
-						setSelectedChatId(newChat.chat_id);
+						const created = await createConversation();
+                            selectChat(created.chat_id);
+                            window.dispatchEvent(new CustomEvent('app:selected-chat', { detail: { chat_id: created.chat_id } }));
+                            reloadChats().catch(() => {});
 					}
 				}
 
-				// Reload chats to ensure latest state from server
 				await reloadChats();
 			} catch (e) {
 				const msg = e instanceof Error ? e.message : "Failed to delete chat";
@@ -124,13 +121,14 @@ export function useConversation(token: string) {
 	}, []);
 
 	// Load messages for selected chat
-	const reloadMessages = useCallback(async () => {
-		if (!selectedChatId) return;
+	const reloadMessages = useCallback(async (chatId?: string) => {
+		const id = chatId || selectedChatId;
+		if (!id) return;
 		safeTokenCheck();
 		setLoadingMessages(true);
 		setErrors(e => ({ ...e, messages: undefined }));
 		try {
-			const res = await fetchMessages(token, selectedChatId);
+			const res = await fetchMessages(token, id);
 			const data: ChatsMessagesResponse = await res.json();
 			const serverMessages = data.messages || [];
 
@@ -201,7 +199,11 @@ export function useConversation(token: string) {
 					const createdRes = await createChat(token);
 					const created: CreateChatResposne = await createdRes.json();
 					activeChatId = created.chat_id;
-					reloadChats();
+					// set selected so UI knows which chat is active
+					setSelectedChatId(activeChatId);
+					// refresh chats list and load messages for the new chat
+					reloadChats().catch(() => {});
+					await reloadMessages(activeChatId).catch(() => {});
 				}
 
 				const ts = Date.now();
@@ -336,8 +338,9 @@ export function useConversation(token: string) {
 				}, loadedChats[0]);
 				setSelectedChatId(recentChat.chat_id);
 			} else {
-				// no chats, create first chat
-				await createConversation();
+				// no chats, create first chat and load its messages
+				const created = await createConversation();
+				if (created?.chat_id) await reloadMessages(created.chat_id).catch(() => {});
 			}
 		};
 
