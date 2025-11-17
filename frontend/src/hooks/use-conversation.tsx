@@ -57,7 +57,7 @@ export function useConversation(token: string) {
 		try {
 			const res = await createChat(token);
 			const data: CreateChatResposne = await res.json();
-			setChats(prev => prev ? [{ title: data.chat_id, chat_id: data.chat_id, created_at: data.created_at }, ...prev] : [{ title: data.chat_id, chat_id: data.chat_id, created_at: data.created_at }]);
+			setChats(prev => prev ? [{ title: data.chat_id, chat_id: data.chat_id, created_at: data.created_at, pinned: data.pinned }, ...prev] : [{ title: data.chat_id, chat_id: data.chat_id, created_at: data.created_at, pinned: data.pinned }]);
 			setSelectedChatId(data.chat_id);
 
 			try {
