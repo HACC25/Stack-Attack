@@ -12,6 +12,8 @@ from src.routes.open_ai.route import router as open_ai_router
 from src.routes.postgres.route import router as postgres_router
 from src.routes.chats.route import router as chats_router
 from src.routes.messages.route import router as messages_router
+from src.routes.chat_categories.routes import router as category_router
+from src.routes.usage.route import router as usage_router
 from src.routes.usage.route import router as usage_router
 from src.routes.security import create_access_token
 from src.utils.postgres.connection_handler import db_manager
@@ -53,6 +55,8 @@ app.include_router(open_ai_router, prefix="/open-ai", tags=["OpenAI"])
 app.include_router(postgres_router, prefix="/postgres", tags=["Postgres"])
 app.include_router(chats_router, prefix="/chats", tags=["Chats"])
 app.include_router(messages_router, prefix="/messages", tags=["Messages"])
+app.include_router(category_router, prefix="/categories", tags=["Categories"])
+app.include_router(usage_router, prefix="/usage", tags=["Usage"])
 app.include_router(usage_router, prefix="/usage", tags=["Usage"])
 
 
