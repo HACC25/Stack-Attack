@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState } from "react";
-import { createChat, fetchChats, fetchMessages, sendMessage } from "@/api/conversations";
+import { createChat, deleteChat, fetchChats, fetchMessages, sendMessage } from "@/api/conversations";
 import type { ApiChat, ChatsMessagesResponse, CreateChatResposne, MessageResponse } from "@/types/conversation";
 
 export interface UseConversationOptions {
@@ -79,6 +79,50 @@ export function useConversation(token: string) {
 			setCreatingChat(false);
 		}
 	}, [token, safeTokenCheck]);
+
+	// Delete Chat
+	const deleteConversation = useCallback(
+		async (chatId: string) => {
+			safeTokenCheck();
+			setErrors(e => ({ ...e, createChat: undefined }));
+
+			try {
+				await deleteChat(token, chatId);
+
+				// Remove deleted chat from chats and get remaining
+				let remainingChats: ApiChat[] = [];
+				setChats(prevChats => {
+					remainingChats = prevChats?.filter(c => c.chat_id !== chatId) || [];
+					return remainingChats;
+				});
+
+				// If the deleted chat was selected
+				if (selectedChatId === chatId) {
+					if (remainingChats.length > 0) {
+						// pick the most recent chat
+						const recentChat = remainingChats.reduce<ApiChat>((prev, curr) =>
+							new Date(curr.created_at) > new Date(prev.created_at) ? curr : prev
+						, remainingChats[0]);
+						setSelectedChatId(recentChat.chat_id);
+					} else {
+						// no chats left, create a new one and set it
+						const newChat = await createConversation();
+						setSelectedChatId(newChat.chat_id);
+					}
+				}
+
+				// Reload chats to ensure latest state from server
+				await reloadChats();
+			} catch (e) {
+				const msg = e instanceof Error ? e.message : "Failed to delete chat";
+				setErrors(errs => ({ ...errs, createChat: msg }));
+				throw e;
+			}
+		},
+		[token, safeTokenCheck, selectedChatId, reloadChats, createConversation]
+	);
+
+	
 
 	const selectChat = useCallback((chatId: string | null) => {
 		setSelectedChatId(chatId);
@@ -321,5 +365,6 @@ export function useConversation(token: string) {
 		assistantLoading,
 		errors,
 		hasConversation: !!selectedChatId,
+		deleteConversation
 	} as const;
 }

@@ -44,3 +44,14 @@ export const sendMessage = async (token: string, payload: CreateMessagePayload):
     checkResponse(res);
     return res;
 };
+
+export const deleteChat = async (token: string, chatId: string): Promise<Response> => {
+    const res = await apiRequestCallback("/chats/", {
+        method: "DELETE",
+        baseUrl: BACKEND_URL,
+        token,
+        body: {"chat_id": chatId},
+    });
+    checkResponse(res);
+    return res;
+}
