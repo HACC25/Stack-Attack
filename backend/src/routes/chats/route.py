@@ -2,7 +2,7 @@ import logging
 
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
-from src.routes.chats.models import AlterPinnedStatusRequest
+from src.routes.chats.models import AlterPinnedStatusRequest, DeleteRequest
 from src.routes.security import get_registered_user
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -81,3 +81,22 @@ async def set_pinned_status(
     await db.refresh(chat)
 
     return chat
+
+@router.delete("/")
+async def delete_chat(
+    request: DeleteRequest,
+    user: Users = Depends(get_registered_user),
+    db: AsyncSession = Depends(db_manager.get_db), 
+):
+    result = await db.execute(
+        select(Chats).where(Chats.id == request.chat_id)
+    )
+    chat = result.scalar_one_or_none()
+
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    await db.delete(chat)
+    await db.commit()
+
+    return JSONResponse(content={"status": "deleted"}, status_code=200)
