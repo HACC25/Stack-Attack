@@ -128,6 +128,13 @@ class TokenUsage(Base):
     prompt_tokens = Column(BIGINT, nullable=False, server_default=text("0"))
     completion_tokens = Column(BIGINT, nullable=False, server_default=text("0"))
     total_tokens = Column(BIGINT, nullable=False, server_default=text("0"))
+    ## Prevent Spamming queries and incurring too much cost
+    daily_tokens = Column(BIGINT, nullable=False, server_default=text("0"))
+    daily_reset_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    )
 
     user = relationship("Users", back_populates="usage")
 

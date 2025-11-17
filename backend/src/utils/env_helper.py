@@ -1,5 +1,10 @@
 import os
 from typing import Callable, Optional, TypeVar
+from dotenv import (
+    load_dotenv,
+)  ## Must be removed before deployment! Comment out or other action locally (no need to commit)
+
+load_dotenv()
 
 T = TypeVar("T")  # Generic type
 
