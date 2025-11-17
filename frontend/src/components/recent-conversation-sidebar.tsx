@@ -7,7 +7,7 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar"
-import { AppRecentConversationDropdown } from "./ui/recent-conversation-dropdown";
+import { AppRecentConversationDropdown } from "./recent-conversation-dropdown";
 import { Tooltip } from "./ui/tooltip";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { AppRecentConversationTooltip } from "./recent-conversation-tooltips";
@@ -86,7 +86,7 @@ export function AppRecentConversationSidebar(){
                                     <div>
                                         <a className="truncate"><span className="truncate">{Conversation.title}</span></a>
                                         <div className="ml-auto">
-                                            <AppRecentConversationDropdown/>
+                                            <AppRecentConversationDropdown chatId={Conversation.chat_id} />
                                         </div>
                                     </div>
                                 </SidebarMenuButton>

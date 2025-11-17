@@ -44,3 +44,23 @@ export const sendMessage = async (token: string, payload: CreateMessagePayload):
     checkResponse(res);
     return res;
 };
+
+export const pinChat = async (token: string, chat_id: string): Promise<Response> => {
+    const res = await apiRequestCallback(`/chats/${chat_id}/pin`, {
+        method: "POST",
+        baseUrl: BACKEND_URL,
+        token,
+    });
+    checkResponse(res);
+    return res;
+};
+
+export const deleteChat = async (token: string, chat_id: string): Promise<Response> => {
+    const res = await apiRequestCallback(`/chats/${chat_id}`, {
+        method: "DELETE",
+        baseUrl: BACKEND_URL,
+        token,
+    });
+    checkResponse(res);
+    return res;
+};
