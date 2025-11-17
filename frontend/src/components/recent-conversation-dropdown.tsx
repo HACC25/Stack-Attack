@@ -5,12 +5,15 @@ import { Card } from "./ui/card";
 import { useAuth } from "@/contexts/auth-context";
 import { deleteChat, pinChat } from "@/api/conversations";
 import React from "react";
+import { useConversation } from "@/hooks/use-conversation";
 
 export function AppRecentConversationDropdown({ chatId }: { chatId: string }){
     const { token } = useAuth();
+    const {selectedChatId} = useConversation((token ?? ""))
 
     const onDelete = React.useCallback(async () => {
         if (!token) return;
+        if(selectedChatId !== chatId) return;
         try {
             await deleteChat(token, chatId);
             try { window.dispatchEvent(new CustomEvent('app:chats-updated', { detail: { source: 'deleteConversation', chat_id: chatId } })); } catch (e) {}
