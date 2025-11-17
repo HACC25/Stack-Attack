@@ -56,6 +56,7 @@ export function AppRecentConversationSidebar(){
                             const created = await createConversation();
                             // select the newly-created chat so the main view renders it
                             selectChat(created.chat_id);
+                            window.dispatchEvent(new CustomEvent('app:selected-chat', { detail: { chat_id: created.chat_id } }));
                             // refresh chats list to ensure sidebar has the latest
                             reloadChats().catch(() => {});
                         } catch (e) {

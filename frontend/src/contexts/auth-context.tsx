@@ -32,7 +32,7 @@ export function AuthProvider({children}: { children: ReactNode }){
         try {
             const url = new URL(window.location.href);
             const search = url.searchParams;
-            const hashParams = url.hash ? new URLSearchParams(url.hash.replace(/^#\/?/, "")) : undefined;
+            const hashParams = url.hash ? new URLSearchParams(url.hash.replace(/^#\/?/, "")) : null;
 
             const tokenParam = search.get("token") || search.get("access_token") || hashParams?.get("token") || hashParams?.get("access_token");
             const emailParam = search.get("email") || search.get("user_email") || hashParams?.get("email") || hashParams?.get("user_email");
