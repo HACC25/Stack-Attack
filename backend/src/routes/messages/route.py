@@ -58,7 +58,8 @@ async def create_chat_message(
         select(func.count(Messages.id)).filter(Messages.chat_id == chat.id)
     )
     message_count = message_count_result.scalar()
-
+    request.message = request.message.replace("{", "")
+    request.message = request.message.replace("}", "")
     if message_count == 1:
         title_prompt = f"Create a short, descriptive chat title (max 6 words) based on this message:\n\n{request.message}"
         title_response: str | None = await open_ai_client_manager.run_prompt_template(
