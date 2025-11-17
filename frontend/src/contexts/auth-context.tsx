@@ -26,15 +26,50 @@ export function AuthProvider({children}: { children: ReactNode }){
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const savedToken = localStorage.getItem("access_token");
-        const savedEmail = localStorage.getItem("user_email");
-        const savedName = localStorage.getItem("user_name");
+        // 1) Try to parse auth details from URL (callback flow)
+        try {
+            const url = new URL(window.location.href);
+            const search = url.searchParams;
+            const hashParams = url.hash ? new URLSearchParams(url.hash.replace(/^#\/?/, "")) : undefined;
 
-        if (savedToken && savedEmail && savedName) {
-            setToken(savedToken);
-            setUser({ email: savedEmail, name: savedName });
+            const tokenParam = search.get("token") || search.get("access_token") || hashParams?.get("token") || hashParams?.get("access_token");
+            const emailParam = search.get("email") || search.get("user_email") || hashParams?.get("email") || hashParams?.get("user_email");
+            const nameParam = search.get("name") || search.get("user_name") || hashParams?.get("name") || hashParams?.get("user_name");
+
+            if (tokenParam) {
+                // Persist what we have; prefer using helper when all values present
+                if (emailParam && nameParam) {
+                    login(tokenParam, emailParam, nameParam);
+                    setToken(tokenParam);
+                    setUser({ email: emailParam, name: nameParam });
+                } else {
+                    // Store token only; user can be fetched later via checkAuth()
+                    localStorage.setItem("access_token", tokenParam);
+                    setToken(tokenParam);
+                }
+
+                // Clean URL of secrets
+                ["token", "access_token", "email", "user_email", "name", "user_name"].forEach((k) => search.delete(k));
+                url.search = search.toString();
+                url.hash = "";
+                const clean = url.pathname + (url.search ? `?${url.search}` : "");
+                window.history.replaceState(null, "", clean);
+            } else {
+                // 2) Fallback to localStorage
+                const savedToken = localStorage.getItem("access_token");
+                const savedEmail = localStorage.getItem("user_email");
+                const savedName = localStorage.getItem("user_name");
+
+                if (savedToken) {
+                    setToken(savedToken);
+                    if (savedEmail && savedName) {
+                        setUser({ email: savedEmail, name: savedName });
+                    }
+                }
+            }
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
 
     const setAuth = (token: string, email: string, name: string) => {
