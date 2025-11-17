@@ -29,21 +29,25 @@ export function useConversation(token: string, options?: UseConversationOptions)
 	}, [token]);
 
 	// Load chats
-	const reloadChats = useCallback(async () => {
+	const reloadChats = useCallback(async (): Promise<ApiChat[]> => {
 		safeTokenCheck();
 		setLoadingChats(true);
 		setErrors(e => ({ ...e, chats: undefined }));
 		try {
 			const res = await fetchChats(token);
 			const data = await res.json();
-			setChats(data.chats || []);
+			const chats: ApiChat[] = data.chats || [];
+			setChats(chats);
+			return chats;
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : "Failed to load chats";
 			setErrors(errs => ({ ...errs, chats: msg }));
+			return [];
 		} finally {
 			setLoadingChats(false);
 		}
 	}, [token, safeTokenCheck]);
+
 
 	// Create chat
 	const createConversation = useCallback(async (): Promise<CreateChatResposne> => {
@@ -54,6 +58,7 @@ export function useConversation(token: string, options?: UseConversationOptions)
 			const res = await createChat(token);
 			const data: CreateChatResposne = await res.json();
 			setChats(prev => prev ? [{ title: data.chat_id, chat_id: data.chat_id, created_at: data.created_at }, ...prev] : [{ title: data.chat_id, chat_id: data.chat_id, created_at: data.created_at }]);
+			setSelectedChatId(data.chat_id);
 			return data;
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : "Failed to create chat";
@@ -77,7 +82,6 @@ export function useConversation(token: string, options?: UseConversationOptions)
 		try {
 			const res = await fetchMessages(token, selectedChatId);
 			const data: ChatsMessagesResponse = await res.json();
-
 			const serverMessages = data.messages || [];
 
 			// If the server returned any assistant messages, clear assistant loading state
@@ -99,10 +103,15 @@ export function useConversation(token: string, options?: UseConversationOptions)
 				const localsToKeep = existing.filter(m => {
 					const isLocal = String(m.message_id).startsWith("local-");
 					const isTyping = (m as any).metadata?.typing === true;
-					if (!isLocal) return false; // keep only local candidates here
-					if (isTyping) return false; // drop typing placeholders when merging
+					const isLocalAssistant = String(m.message_id).startsWith("local-assistant-");
+
+					if (!isLocal) return false;     // only consider local placeholders
+					if (isTyping) return false;     // drop typing indicators
+					if (isLocalAssistant) return false;  // drop streamed AI placeholder
+
 					const clientTemp = (m as any).metadata?.client_temp_id;
-					if (clientTemp && serverByClientId.has(String(clientTemp))) return false; // replaced by server
+					if (clientTemp && serverByClientId.has(String(clientTemp))) return false;
+
 					return true;
 				});
 
@@ -123,23 +132,32 @@ export function useConversation(token: string, options?: UseConversationOptions)
 		} finally {
 			setLoadingMessages(false);
 		}
-	}, [token, selectedChatId, safeTokenCheck]);
+	}, [token, selectedChatId, safeTokenCheck, chats]);
 
 	const sendMessageAction = useCallback(
 		async (content: string, metadata?: Record<string, any>): Promise<void> => {
 			safeTokenCheck();
+			if (!selectedChatId) {
+				await createConversation();
+			}
 			setSendingMessage(true);
 			setErrors(e => ({ ...e, send: undefined }));
+
 			try {
 				let activeChatId = selectedChatId;
+
+				// Create chat if not exists
 				if (!activeChatId) {
 					const createdRes = await createChat(token);
 					const created: CreateChatResposne = await createdRes.json();
 					activeChatId = created.chat_id;
 					reloadChats();
 				}
+
 				const ts = Date.now();
 				const clientTempId = `local-user-${ts}`;
+
+				// Local optimistic user message
 				const localUserMsg: MessageResponse = {
 					message_id: clientTempId,
 					sent_by_user: true,
@@ -148,32 +166,80 @@ export function useConversation(token: string, options?: UseConversationOptions)
 					created_at: new Date().toISOString(),
 				};
 
-				const typingId = `local-typing-${ts}`;
+				// Local assistant “typing” placeholder
+				const typingId = `local-assistant-${ts}`;
 				const typingMsg: MessageResponse = {
 					message_id: typingId,
 					sent_by_user: false,
-					content: "...",
+					content: "",
 					metadata: { typing: true },
 					created_at: new Date().toISOString(),
 				};
 
 				setMessages(prev => {
-					const base = prev ? prev.filter(m => m.message_id !== 'local-initial') : [];
+					const base = prev ? prev.filter(m => m.message_id !== "local-initial") : [];
 					return [...base, localUserMsg, typingMsg];
 				});
 				setAssistantLoading(true);
 
 				if (!selectedChatId) {
 					setSelectedChatId(activeChatId);
-					reloadChats().catch(() => {});
 				}
 
-				const res = await sendMessage(token, { chat_id: activeChatId, message: content, metadata: { ...(metadata || {}), client_temp_id: clientTempId } });
-				await res.text().catch(() => "");
+				// Send streaming request
+				const res = await sendMessage(token, {
+					chat_id: activeChatId,
+					message: content,
+					metadata: { ...(metadata || {}), client_temp_id: clientTempId },
+				});
 
-				setTimeout(() => {
-					reloadMessages().catch(() => {});
-				}, 200);
+				if (!res.body) return;
+
+				const reader = res.body.getReader();
+				const decoder = new TextDecoder();
+
+				let accumulated = "";
+
+				while (true) {
+					const { value, done } = await reader.read();
+					if (done) break;
+
+					const chunk = decoder.decode(value, { stream: true });
+
+					// SSE parsing (expects `data: <text>\n\n`)
+					chunk.split("\n\n").forEach(event => {
+						if (event.startsWith("data: ")) {
+							const text = event.replace("data: ", "");
+
+							accumulated += text;
+							console.log(accumulated)
+
+							// Update the typing message in-place
+							setMessages(prev => {
+								const list = prev ?? [];   // ensures array
+								return(
+									list.map(m => {
+										if (m.message_id === typingId)
+											return { ...m, content: accumulated };
+										return m;
+									})
+								)
+							});
+						}
+					});
+				}
+				setMessages(prev => {
+					const list = prev ?? [];
+					return list.map(m =>
+						m.message_id === typingId
+							? { ...m, metadata: { ...m.metadata, typing: false } }
+							: m
+					);
+				});
+				setAssistantLoading(false);
+
+				// reload once to get the final DB-saved message
+				reloadMessages().catch(() => {});
 
 				return;
 			} catch (e) {
@@ -193,20 +259,6 @@ export function useConversation(token: string, options?: UseConversationOptions)
 	}, [token, reloadChats]);
 
 	useEffect(() => {
-		if (!selectedChatId && options?.initialMessage && !messages) {
-			const localInitial = {
-				message_id: 'local-initial',
-				sent_by_user: false,
-				content: options.initialMessage,
-				timestamp: new Date(),
-				metadata: {},
-				created_at: new Date().toISOString(),
-			} as unknown as MessageResponse;
-			setMessages([localInitial]);
-		}
-	}, [selectedChatId, options?.initialMessage, messages]);
-
-	useEffect(() => {
 		if (selectedChatId) reloadMessages();
 	}, [selectedChatId, reloadMessages]);
 
@@ -223,6 +275,26 @@ export function useConversation(token: string, options?: UseConversationOptions)
 			try { window.removeEventListener('app:selected-chat', handler as EventListener); } catch (e) {}
 		};
 	}, []);
+
+	useEffect(() => {
+		if (!token) return;
+
+		const initializeConversation = async () => {
+			const loadedChats = await reloadChats();
+			if (loadedChats.length > 0) {
+				// pick the most recent chat
+				const recentChat = loadedChats.reduce<ApiChat>((prev, curr) => {
+					return new Date(curr.created_at) > new Date(prev.created_at) ? curr : prev;
+				}, loadedChats[0]);
+				setSelectedChatId(recentChat.chat_id);
+			} else {
+				// no chats, create first chat
+				await createConversation();
+			}
+		};
+
+		initializeConversation();
+	}, [token, reloadChats, createConversation]);
 
 	return {
 		chats,

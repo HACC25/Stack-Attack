@@ -7,7 +7,7 @@ from src.routes.security import get_registered_user
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.postgres.connection_handler import db_manager
-from src.utils.postgres.models import Chats, Users
+from src.utils.postgres.models import Chats, Messages, Users
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -25,6 +25,19 @@ async def create_chat(
     db.add(new_chat)
     await db.commit()
     await db.refresh(new_chat)
+
+    default_message: str = "Aloha! 🌈 I’m Kōkua. Ask me about your employment benefits under UH collective bargaining agreements."
+
+    new_ai_message = Messages(
+        chat_id=new_chat.id,
+        content=default_message,
+        sent_by_user=False,
+        message_metadata={},
+    )
+
+    db.add(new_ai_message)
+    await db.commit()
+    await db.refresh(new_ai_message)
 
     new_chat_info = {
         "title": (

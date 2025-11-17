@@ -2,7 +2,7 @@ import {Message} from "@/components/chat-message"
 import type { Message as MessageProp } from "@/types/conversation";
 
 export function AppChatHistory({ messages, loadingPrevMessages, loadingAIResponse }: { messages: MessageProp[]; loadingPrevMessages?: boolean; loadingAIResponse?: boolean }){
-    // Show a simple skeleton when loading and no messages yet
+
     if (loadingPrevMessages && (!messages || messages.length === 0)) {
         return (
             <div className="chat-history flex flex-col gap-4 p-4">
@@ -13,18 +13,28 @@ export function AppChatHistory({ messages, loadingPrevMessages, loadingAIRespons
         );
     }
 
-    const chatHistoryMessage = messages.sort((a:MessageProp, b:MessageProp) => {
+    const sortedMessages = [...messages].sort((a:MessageProp, b:MessageProp) => {
         if(a.timestamp > b.timestamp) return 1;
         else if (b.timestamp > a.timestamp) return -1;
         else return 0;
-    }).map((message) => {
-        return <Message key={message.message_id} message_id={message.message_id} content={message.content} timestamp={message.timestamp} sent_by_user={message.sent_by_user} metadata={message.metadata}></Message>
     });
+
+    const chatHistoryMessage = sortedMessages.map((message) => (
+        <Message 
+            key={message.message_id}
+            message_id={message.message_id}
+            content={message.content}
+            timestamp={message.timestamp}
+            sent_by_user={message.sent_by_user}
+            metadata={message.metadata}
+        />
+    ));
+
+    console.log(chatHistoryMessage)
 
     return (
         <div className="chat-history flex flex-col gap-20">
             {chatHistoryMessage}
-            {loadingAIResponse && <Message sent_by_user={false} message_id="AIsending" content="..." timestamp={new Date}></Message>}
         </div>
     );
 }

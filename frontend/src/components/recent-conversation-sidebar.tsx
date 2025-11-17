@@ -59,6 +59,7 @@ export function AppRecentConversationSidebar(){
                             // refresh chats list to ensure sidebar has the latest
                             reloadChats().catch(() => {});
                         } catch (e) {
+                            console.error(e)
                         }
                     }}
                     aria-label="Create new conversation"

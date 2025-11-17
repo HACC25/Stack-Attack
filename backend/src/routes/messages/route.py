@@ -156,10 +156,9 @@ async def create_chat_message(
         async for event in stream:
             if isinstance(event, ChatCompletionChunk):
                 for choice in event.choices:
-                    ai_response += choice.delta.content or ""
-                    yield choice.delta.content or ""
-            yield ""
-
+                    chunk = choice.delta.content or ""
+                    ai_response += chunk
+                    yield f"data: {chunk}\n\n".encode("utf-8")
             if event.usage:
                 prompt_tokens = event.usage.prompt_tokens
                 completion_tokens = event.usage.completion_tokens

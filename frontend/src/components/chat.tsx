@@ -4,11 +4,9 @@ import { useAuth } from "@/contexts/auth-context";
 import { useConversation } from "@/hooks/use-conversation";
 import type { Message } from "@/types/conversation";
 
-const WELCOME_MESSAGE = "Aloha! 🌈 I’m Kōkua. Ask me about your employment benefits under UH collective bargaining agreements.";
-
 export function AppChat() {
     const { token } = useAuth();
-    const { messages, sendMessageAction, sendingMessage, loadingMessages, assistantLoading } = useConversation(token || "", { initialMessage: WELCOME_MESSAGE });
+    const { messages, sendMessageAction, sendingMessage, loadingMessages, assistantLoading } = useConversation(token || "");
 
     const normalizedMessages: Message[] = messages.map((m: any) => {
         if (m.timestamp instanceof Date) return m as Message;

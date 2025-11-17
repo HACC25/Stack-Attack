@@ -2,10 +2,12 @@ import { apiRequestCallback } from "./api";
 import { checkResponse } from "./response";
 import type { CreateMessagePayload } from "@/types/conversation";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
 export const createChat = async (token: string) => {
     const res = await apiRequestCallback("/chats/", {
         method: "POST",
-        baseUrl: "http://localhost:8000",
+        baseUrl: BACKEND_URL,
         token,
     });
     checkResponse(res)
@@ -15,7 +17,7 @@ export const createChat = async (token: string) => {
 export const fetchChats = async (token: string): Promise<Response> => {
     const res = await apiRequestCallback("/chats/", {
         method: "GET",
-        baseUrl: "http://localhost:8000",
+        baseUrl: BACKEND_URL,
         token,
     });
     checkResponse(res)
@@ -25,7 +27,7 @@ export const fetchChats = async (token: string): Promise<Response> => {
 export const fetchMessages = async (token:string, chat_id:string): Promise<Response> => {
     const res = await apiRequestCallback(`/messages/${chat_id}`, {
         method: "GET",
-        baseUrl: "http://localhost:8000",
+        baseUrl: BACKEND_URL,
         token,
     })
     checkResponse(res)
@@ -35,7 +37,7 @@ export const fetchMessages = async (token:string, chat_id:string): Promise<Respo
 export const sendMessage = async (token: string, payload: CreateMessagePayload): Promise<Response> => {
     const res = await apiRequestCallback("/messages/message", {
         method: "POST",
-        baseUrl: "http://localhost:8000",
+        baseUrl: BACKEND_URL,
         token,
         body: payload,
     });
