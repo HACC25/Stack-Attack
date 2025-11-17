@@ -95,6 +95,7 @@ class Chats(Base):
     )
     target_audience = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    pinned = Column(Boolean, server_default="false", nullable=False)
 
     user = relationship("Users", back_populates="chats")
     messages = relationship("Messages", back_populates="chat", cascade="all, delete")

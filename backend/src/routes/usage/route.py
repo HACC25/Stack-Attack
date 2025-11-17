@@ -6,7 +6,7 @@ from src.routes.security import get_registered_user
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.postgres.connection_handler import db_manager
-from src.utils.postgres.models import Chats, Users, TokenUsage
+from src.utils.postgres.models import Users, TokenUsage
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
