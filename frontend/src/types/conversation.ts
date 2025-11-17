@@ -13,7 +13,7 @@ export interface Message{
     metadata?: Record<string, any>;
 }
 
-export type ApiChat = {title:string; chat_id: string; created_at: string };
+export type ApiChat = {title:string; chat_id: string; created_at: string; pinned:boolean};
 export type UserChatsResponse = { user_email: string; chats: ApiChat[] };
 export type CreateChatResposne = {chat_id:string; user_email:string; created_at: string};
 export type MessageResponse = {message_id:string, sent_by_user:boolean, content:string, metadata:Record<string, any>, created_at:string}

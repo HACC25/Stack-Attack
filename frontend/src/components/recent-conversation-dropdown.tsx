@@ -13,7 +13,6 @@ export function AppRecentConversationDropdown({ chatId }: { chatId: string }){
 
     const onDelete = React.useCallback(async () => {
         if (!token) return;
-        if(selectedChatId !== chatId) return;
         try {
             await deleteChat(token, chatId);
             try { window.dispatchEvent(new CustomEvent('app:chats-updated', { detail: { source: 'deleteConversation', chat_id: chatId } })); } catch (e) {}
@@ -37,7 +36,7 @@ export function AppRecentConversationDropdown({ chatId }: { chatId: string }){
             <DropdownMenuTrigger asChild>
                     <EllipsisVertical />
             </DropdownMenuTrigger>
-            <DropdownMenuContent side={"right"} align={"start"} className="min-w-56 rounded-lg">
+            <DropdownMenuContent side={"right"} align={"start"} className="min-w-56 rounded-lg" onClick={(e) => e.stopPropagation()}>
                 <Card className="py-1">
                     <DropdownMenuGroup>
                     <DropdownMenuLabel>Conversation Settings</DropdownMenuLabel>

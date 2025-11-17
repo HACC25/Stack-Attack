@@ -39,6 +39,8 @@ export function AppRecentConversationSidebar(){
     const sort_chats = chats?.sort((a: ApiChat, b: ApiChat) => {
         const dateA = new Date(a.created_at);
         const dateB = new Date(b.created_at);
+        if(a.pinned && !b.pinned) return -1
+        if(!a.pinned && b.pinned) return 1
         if(dateA > dateB) return -1;
         else if(dateA < dateB) return 1;
         else return 0;
