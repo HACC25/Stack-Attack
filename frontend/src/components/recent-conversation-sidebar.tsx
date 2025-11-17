@@ -86,7 +86,7 @@ export function AppRecentConversationSidebar(){
                                     <div>
                                         <a className="truncate"><span className="truncate">{Conversation.title}</span></a>
                                         <div className="ml-auto">
-                                            <AppRecentConversationDropdown chat_id={Conversation.chat_id}/>
+                                            <AppRecentConversationDropdown chatId={Conversation.chat_id}/>
                                         </div>
                                     </div>
                                 </SidebarMenuButton>
