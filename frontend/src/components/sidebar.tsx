@@ -12,6 +12,7 @@ import { AppAccountSidebar } from "./account-sidebar"
 import type { AccountProp } from "@/components/account-sidebar"
 import { Button } from "./ui/button"
 import { SidebarButton } from "./custom-sidebar-button"
+import { useAuth } from "../contexts/auth-context"
 
 const example_account:AccountProp = {
         name: "Kaleo Smith",
@@ -21,6 +22,7 @@ const example_account:AccountProp = {
 
 export function AppSidebar() {
     const {state} = useSidebar();
+    const { user } = useAuth();
 
     const isCollapsed = state === 'collapsed';
     return (
@@ -38,7 +40,7 @@ export function AppSidebar() {
             <AppRecentConversationSidebar></AppRecentConversationSidebar>
         </SidebarContent>
         <SidebarFooter>
-            <AppAccountSidebar name={example_account.name} email={example_account.email} department={example_account.department} ></AppAccountSidebar>
+            <AppAccountSidebar name={user?.name ?? ""} email={user?.email ?? ""} department={""} ></AppAccountSidebar>
         </SidebarFooter>
         </Sidebar>
     )

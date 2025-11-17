@@ -11,69 +11,86 @@ import { AppRecentConversationDropdown } from "./ui/recent-conversation-dropdown
 import { Tooltip } from "./ui/tooltip";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { AppRecentConversationTooltip } from "./recent-conversation-tooltips";
+import React from "react";
+import type { ApiChat } from "@/types/conversation";
+import { Button } from "./ui/button";
+import { Plus } from "lucide-react";
+import { useConversation } from "@/hooks/use-conversation";
+import { useAuth } from "@/contexts/auth-context";
 
-interface ConversationProp{
-    id:string;
-    title:string;
-    timestamp:Date;
-}
-
-const example_recent_conversations:ConversationProp[] = [
-    {
-        id: "9d8fce90-ac43-47b0-a5ba-eea38251af4e",
-        title: "Funeral Leave Eligibility – Conversation with Kōkua (Blue-Collar Supervisors Agreement)",
-        timestamp: new Date("2021-10-27T18:45:00.000Z")
-    },
-
-    {
-        id: "46293afc-c11f-4db3-9411-48423630205d",
-        title: "Requesting Family Leave for Care of a Parent – Conversation with Kōkua",
-        timestamp: new Date("2025-09-15T22:10:30.000Z")
-    },
-
-    {
-        id: "4667d3d8-b0e9-47bb-8598-532296edcbf8",
-        title: "Overtime Compensation Inquiry – Conversation with Kōkua",
-        timestamp: new Date("2025-08-05T03:25:45.000Z")
-    },
-
-    {
-        id: "6511df02-3e9b-4748-94ee-b23786c26e8f",
-        title: "Vacation Leave Accrual and Carryover – Conversation with Kōkua",
-        timestamp: new Date("2025-11-12T17:00:00.000Z")
-    }
-]
-
-const sortedConversation:ConversationProp[] = example_recent_conversations.sort((a, b) => {
-        if(a.timestamp > b.timestamp) return -1;
-        else if(a.timestamp < b.timestamp) return 1;
-        else return 0;
-    });
 
 export function AppRecentConversationSidebar(){
         const {state} = useSidebar();
+        
+        const { token } = useAuth();
+        const {chats, reloadChats, selectChat, createConversation} = useConversation(token ?? "");
+
+        // Listen for global chats-updated events so this sidebar can refresh when another hook instance updates chats
+        // (useConversation is currently per-component; this allows simple cross-instance synchronization)
+        React.useEffect(() => {
+            const handler = () => {
+                // call the hook's reload function to refresh local state
+                reloadChats().catch(() => {});
+            };
+            window.addEventListener('app:chats-updated', handler as EventListener);
+            return () => window.removeEventListener('app:chats-updated', handler as EventListener);
+        }, [reloadChats]);
+
+        const sort_chats = chats?.sort((a: ApiChat, b: ApiChat) => {
+            const dateA = new Date(a.created_at);
+            const dateB = new Date(b.created_at);
+            if(dateA > dateB) return -1;
+            else if(dateA < dateB) return 1;
+            else return 0;
+        })
 
     const isCollapsed = state === 'collapsed';
     
     return(
         <SidebarGroup>
-            <SidebarGroupLabel>Recent</SidebarGroupLabel>
+            <SidebarGroupLabel className="flex">
+                Recent
+                <Button className="ml-auto"size="icon-sm" variant="ghost"
+                    onClick={async () => {
+                        try {
+                            const created = await createConversation();
+                            // select the newly-created chat so the main view renders it
+                            selectChat(created.chat_id);
+                            // refresh chats list to ensure sidebar has the latest
+                            reloadChats().catch(() => {});
+                        } catch (e) {
+                        }
+                    }}
+                    aria-label="Create new conversation"
+                >
+                    <Plus />
+                </Button>
+            </SidebarGroupLabel>
             <SidebarGroupContent>
                 {!isCollapsed&&(<SidebarMenu>
-                {sortedConversation.map((Conversation) => (
-                    <Tooltip>
+                {(sort_chats ?? []).map((Conversation: ApiChat) => (
+                    <Tooltip key={Conversation.chat_id}>
                         <TooltipTrigger asChild>
-                            <SidebarMenuItem key={Conversation.id}>
-                            
+                            <SidebarMenuItem key={Conversation.chat_id} onClick={() => {
+                                try {
+                                    // notify other components about the selected chat
+                                    window.dispatchEvent(new CustomEvent('app:selected-chat', { detail: { chat_id: Conversation.chat_id } }));
+                                } catch (e) {}
+                                // also set local selection
+                                selectChat(Conversation.chat_id);
+                            }}>
+
                                 <SidebarMenuButton asChild>
                                     <div>
                                         <a className="truncate"><span className="truncate">{Conversation.title}</span></a>
-                                        <AppRecentConversationDropdown/>
+                                        <div className="ml-auto">
+                                            <AppRecentConversationDropdown/>
+                                        </div>
                                     </div>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         </TooltipTrigger>
-                        <AppRecentConversationTooltip conversationTimestamp={Conversation.timestamp} conversationTitle={Conversation.title}/>
+                        <AppRecentConversationTooltip conversationTimestamp={new Date(Conversation.created_at)} conversationTitle={Conversation.title}/>
                     </Tooltip>
                 ))}
                 </SidebarMenu>)}

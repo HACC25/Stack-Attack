@@ -1,6 +1,5 @@
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuGroup, DropdownMenuLabel } from "./dropdown-menu";
-import { Button } from "./button";
 import { EllipsisVertical, Pin, Trash2 } from "lucide-react";
 import { Card } from "./card";
 
