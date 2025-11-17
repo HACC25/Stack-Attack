@@ -1,7 +1,7 @@
 import {Message} from "@/components/chat-message"
 import type { Message as MessageProp } from "@/types/conversation";
 
-export function AppChatHistory({ messages, loadingPrevMessages, loadingAIResponse }: { messages: MessageProp[]; loadingPrevMessages?: boolean; loadingAIResponse?: boolean }){
+export function AppChatHistory({ messages, loadingPrevMessages}: { messages: MessageProp[]; loadingPrevMessages?: boolean; loadingAIResponse?: boolean }){
 
     if (loadingPrevMessages && (!messages || messages.length === 0)) {
         return (
