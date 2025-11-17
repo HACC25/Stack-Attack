@@ -45,6 +45,17 @@ export const sendMessage = async (token: string, payload: CreateMessagePayload):
     return res;
 };
 
+export const pinChat = async (token: string, chat_id: string): Promise<Response> => {
+    const res = await apiRequestCallback(`/chats/set-pinned-status`, {
+        method: "POST",
+        baseUrl: BACKEND_URL,
+        token,
+        body: {"chat_id": chat_id}
+    });
+    checkResponse(res);
+    return res;
+};
+
 export const deleteChat = async (token: string, chatId: string): Promise<Response> => {
     const res = await apiRequestCallback("/chats/", {
         method: "DELETE",

@@ -88,7 +88,7 @@ async def set_pinned_status(
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    chat.pinned = request.pinned
+    chat.pinned = not chat.pinned
 
     await db.commit()
     await db.refresh(chat)
