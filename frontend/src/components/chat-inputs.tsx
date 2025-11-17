@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Field } from '@/components/ui/field';
 import { Card } from "@/components/ui/card";
-import { FileButton } from "./file-button";
-import { DictationButton } from "./dictation-button";
 import TextInput from './text-input';
 import { QuickChatButton, type QuickChatButtonProp } from './quick-chat-input';
 import { Button } from './ui/button';

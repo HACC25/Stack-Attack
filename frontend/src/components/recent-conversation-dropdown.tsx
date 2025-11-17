@@ -5,12 +5,9 @@ import { Card } from "./ui/card";
 import { useAuth } from "@/contexts/auth-context";
 import { deleteChat, pinChat } from "@/api/conversations";
 import React from "react";
-import { useConversation } from "@/hooks/use-conversation";
 
 export function AppRecentConversationDropdown({ chatId }: { chatId: string }){
     const { token } = useAuth();
-    const {selectedChatId} = useConversation((token ?? ""))
-
     const onDelete = React.useCallback(async () => {
         if (!token) return;
         try {
