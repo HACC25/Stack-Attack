@@ -212,8 +212,6 @@ export function useConversation(token: string, options?: UseConversationOptions)
 							const text = event.replace("data: ", "");
 
 							accumulated += text;
-							console.log(accumulated)
-
 							// Update the typing message in-place
 							setMessages(prev => {
 								const list = prev ?? [];   // ensures array

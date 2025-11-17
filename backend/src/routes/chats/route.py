@@ -21,7 +21,7 @@ async def create_chat(
     """
     Create a new chat for the authenticated and registered user.
     """
-    new_chat = Chats(user_sub=user.sub)
+    new_chat = Chats(user_sub=user.sub, chat_title="New Chat")
     db.add(new_chat)
     await db.commit()
     await db.refresh(new_chat)
@@ -40,9 +40,7 @@ async def create_chat(
     await db.refresh(new_ai_message)
 
     new_chat_info = {
-        "title": (
-            new_chat.chat_title if new_chat.chat_title else f"chat_{new_chat.id}"
-        ),  ## This is a temporary title to ensure one exists during chat creation (real title is created on first user message)
+        "title": f"chat_{new_chat.id}",  ## This is a temporary title to ensure one exists during chat creation (real title is created on first user message)
         "chat_id": str(new_chat.id),
         "user_email": user.email,
         "created_at": new_chat.created_at.isoformat(),

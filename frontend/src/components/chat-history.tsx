@@ -30,8 +30,6 @@ export function AppChatHistory({ messages, loadingPrevMessages, loadingAIRespons
         />
     ));
 
-    console.log(chatHistoryMessage)
-
     return (
         <div className="chat-history flex flex-col gap-20">
             {chatHistoryMessage}
