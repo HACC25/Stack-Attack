@@ -1,8 +1,5 @@
 import os
 from typing import Callable, Optional, TypeVar
-from dotenv import load_dotenv
-
-load_dotenv()
 
 T = TypeVar("T")  # Generic type
 
