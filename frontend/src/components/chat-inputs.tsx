@@ -48,10 +48,17 @@ export function AppChatInput({ onSend, sending, disabled }: { onSend: (content: 
                 <form onSubmit={handleSubmit}>
                     <Field>
                         <div className='flex items-end gap-2'>
-                            <FileButton />
+                            {/* <FileButton /> */}
                             <TextInput value={value} onChange={setValue} disabled={!!disabled} onKeyDown={handleKeyDown} />
-                            <DictationButton />
-                            <Button type="submit" size="icon-sm" aria-label="Send message" className="bg-transparent" variant="ghost" disabled={!!disabled || sending || !value.trim()} title={sending ? 'Sending…' : 'Send message'}
+                            {/* <DictationButton /> */}
+                            <Button
+                                type="submit"
+                                size="icon-sm"
+                                aria-label="Send message"
+                                variant="ghost"
+                                className="!bg-transparent"
+                                disabled={!!disabled || sending || !value.trim()}
+                                title={sending ? 'Sending…' : 'Send message'}
                             >
                                 <Send />
                             </Button>

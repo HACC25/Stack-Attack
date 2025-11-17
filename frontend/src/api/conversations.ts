@@ -55,12 +55,13 @@ export const pinChat = async (token: string, chat_id: string): Promise<Response>
     return res;
 };
 
-export const deleteChat = async (token: string, chat_id: string): Promise<Response> => {
-    const res = await apiRequestCallback(`/chats/${chat_id}`, {
+export const deleteChat = async (token: string, chatId: string): Promise<Response> => {
+    const res = await apiRequestCallback("/chats/", {
         method: "DELETE",
         baseUrl: BACKEND_URL,
         token,
+        body: {"chat_id": chatId},
     });
     checkResponse(res);
     return res;
-};
+}

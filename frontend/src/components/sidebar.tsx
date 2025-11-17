@@ -9,16 +9,9 @@ import {
 } from "@/components/ui/sidebar"
 import { AppRecentConversationSidebar } from "./recent-conversation-sidebar"
 import { AppAccountSidebar } from "./account-sidebar"
-import type { AccountProp } from "@/components/account-sidebar"
 import { Button } from "./ui/button"
 import { SidebarButton } from "./custom-sidebar-button"
 import { useAuth } from "../contexts/auth-context"
-
-const example_account:AccountProp = {
-        name: "Kaleo Smith",
-        email: "kaleo.smith@hawaii.edu",
-        department: "Department",
-}
 
 export function AppSidebar() {
     const {state} = useSidebar();
@@ -31,7 +24,7 @@ export function AppSidebar() {
             <SidebarButton/>
             {
                 !isCollapsed && 
-                <Button variant="ghost" size="icon-sm">
+                <Button variant="ghost" size="icon-sm" className="!bg-transparent">
                     <Search/>
                 </Button>
             }
