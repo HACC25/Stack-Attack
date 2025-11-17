@@ -31,7 +31,7 @@ export function AppSidebar() {
             <SidebarButton/>
             {
                 !isCollapsed && 
-                <Button variant="ghost" size="icon-sm">
+                <Button variant="ghost" size="icon-sm" className="!bg-transparent">
                     <Search/>
                 </Button>
             }

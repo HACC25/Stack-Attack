@@ -15,7 +15,7 @@ const fileSidebarTriggerRef = useRef<HTMLButtonElement | null>(null);
     return(
         <>
             <SidebarTrigger className="sr-only" ref={fileSidebarTriggerRef}/>
-            <Button variant="ghost" size="icon-sm" onClick={handleButtonClick}>
+            <Button variant="ghost" className="!bg-transparent" size="icon-sm" onClick={handleButtonClick}>
                     <Menu/>
             </Button>
         </>
