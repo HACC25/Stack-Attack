@@ -57,7 +57,6 @@ app.include_router(chats_router, prefix="/chats", tags=["Chats"])
 app.include_router(messages_router, prefix="/messages", tags=["Messages"])
 app.include_router(category_router, prefix="/categories", tags=["Categories"])
 app.include_router(usage_router, prefix="/usage", tags=["Usage"])
-app.include_router(usage_router, prefix="/usage", tags=["Usage"])
 
 
 @app.middleware("http")

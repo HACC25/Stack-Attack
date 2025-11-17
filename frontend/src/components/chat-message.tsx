@@ -54,7 +54,7 @@ function MessageContent({ sent_by_user, content, metadata }: { sent_by_user: boo
 
     const contentIsString = typeof content === "string";
 
-    const isTypingPlaceholder = metadata?.typing === true || content === "__typing__";
+    const isTypingPlaceholder = (content as string).length === 0;
 
     if (!sent_by_user && isTypingPlaceholder) {
         return (
@@ -77,7 +77,9 @@ function MessageContent({ sent_by_user, content, metadata }: { sent_by_user: boo
     ) : (
         <Card className="border-0 shadow-none w-fit">
             <CardContent className="border-0">
-                <div className="text-left">{contentIsString ? renderMarkdown(content as string) : content}</div>
+                <div className="text-left" key={content as string}>
+                    {contentIsString ? renderMarkdown(content as string) : content}
+                </div>
             </CardContent>
         </Card>
     );

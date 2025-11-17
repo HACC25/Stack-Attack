@@ -17,6 +17,8 @@ type AuthContextType = {
     logout: () => void;
 };
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({children}: { children: ReactNode }){
@@ -85,7 +87,7 @@ export function AuthProvider({children}: { children: ReactNode }){
             setError(null);
             const res = await apiRequestCallback("/usage/user", {
                 method: "GET",
-                baseUrl: "http://localhost:8000",
+                baseUrl: BACKEND_URL,
                 token: token,
             });
             
