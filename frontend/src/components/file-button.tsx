@@ -14,7 +14,7 @@ export function FileButton(){
 
     return(
         <div>
-        <Button size="icon-sm" aria-label="Submit File" className="bg-transparent" variant="ghost" onClick={handleButtonClick}>
+        <Button size="icon-sm" aria-label="Submit File" className="!bg-transparent" variant="ghost" onClick={handleButtonClick}>
             <File/>
         </Button>
         <Input type="file" className="sr-only" ref={fileInputRef}/>
