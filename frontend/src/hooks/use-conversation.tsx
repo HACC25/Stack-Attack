@@ -6,7 +6,7 @@ export interface UseConversationOptions {
 	initialMessage?: React.ReactNode;
 }
 
-export function useConversation(token: string, options?: UseConversationOptions) {
+export function useConversation(token: string) {
 	// Chats state
 	const [chats, setChats] = useState<ApiChat[] | null>(null);
 	const [loadingChats, setLoadingChats] = useState(false);
@@ -38,6 +38,11 @@ export function useConversation(token: string, options?: UseConversationOptions)
 			const data = await res.json();
 			const chats: ApiChat[] = data.chats || [];
 			setChats(chats);
+			try {
+				window.dispatchEvent(new CustomEvent('app:chats-updated', { detail: { source: 'reloadChats' } }));
+			} catch (e) {
+				// ignore (SSR)
+			}
 			return chats;
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : "Failed to load chats";
@@ -59,6 +64,12 @@ export function useConversation(token: string, options?: UseConversationOptions)
 			const data: CreateChatResposne = await res.json();
 			setChats(prev => prev ? [{ title: data.chat_id, chat_id: data.chat_id, created_at: data.created_at }, ...prev] : [{ title: data.chat_id, chat_id: data.chat_id, created_at: data.created_at }]);
 			setSelectedChatId(data.chat_id);
+
+			try {
+				window.dispatchEvent(new CustomEvent('app:chats-updated', { detail: { source: 'createConversation', chat_id: data.chat_id } }));
+			} catch (e) {
+
+			}
 			return data;
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : "Failed to create chat";
