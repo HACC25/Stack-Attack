@@ -219,7 +219,6 @@ __marimo__/
 # AWS
 .ebextensions
 .elasticbeanstalk
-.ebextensions
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
